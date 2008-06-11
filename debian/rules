@@ -1,0 +1,2 @@
+#!/usr/bin/make -f
+include /usr/share/haskell-devscripts/hlibrary.mk

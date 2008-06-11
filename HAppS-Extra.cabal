@@ -1,0 +1,24 @@
+Name:             HAppS-Extra
+Version:          0.1
+License:          BSD3
+Author:           jeremy@n-heptane.com
+Maintainer:       jeremy@n-heptane.com
+
+Synopsis:         Components built on top of HAppS+HSP
+Description:      A collection of components built on top of HAppS+HSP, including
+                  Google Analytics, a Calendar widget, and more.
+
+Hs-Source-Dirs:   src
+Exposed-Modules:  HSP.Google.Analytics
+                  
+Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4
+Build-Type:       Simple
+Category:         Web, Language
+
+Extensions:             MultiParamTypeClasses,
+                        TypeFamilies,
+                        FlexibleContexts,
+                        FlexibleInstances,
+                        TypeSynonymInstances,
+                        OverlappingInstances,
+                        UndecidableInstances
