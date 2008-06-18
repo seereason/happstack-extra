@@ -29,3 +29,12 @@ maybeModify f =
          (Just state') -> 
              do put state' 
                 return True
+
+-- * this should go in Data.Map
+{-
+insertIfNew :: (Ord k) => k -> a -> M.Map k a -> Maybe (M.Map k a)
+insertIfNew k v m =
+    case M.insertLookupWithKey (\_ _ oldValue -> oldValue) k v m of
+      (Nothing, m') -> Just m'
+      (Just _, _) -> return m
+-}
