@@ -9,6 +9,7 @@ import Data.Generics
 import HAppS.Data
 import HAppS.Data.IxSet
 
+-- |perform insert only if test is True
 testAndInsert :: (Indexable a b,
                   Ord a,
                   Data a,
