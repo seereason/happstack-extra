@@ -1,3 +1,10 @@
+haskell-happs-extra (0.3) unstable; urgency=low
+
+  * Fixed bug in tryNewSession
+  * Added DelSession
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Fri, 20 Jun 2008 01:28:15 -0700
+
 haskell-happs-extra (0.2) unstable; urgency=low
 
   * Added HAppS.Data.IxSet.Extra testAndInsert
