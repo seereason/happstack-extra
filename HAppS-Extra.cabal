@@ -10,7 +10,7 @@ Description:      A collection of components built on top of HAppS+HSP, includin
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password,
-		  HAppS.Data.Session
+		  HAppS.Data.Session, HAppS.State.Extra, HAppS.Data.Account
                   
 Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4, HAppS-IxSet, HAppS-Data, HAppS-Util, mtl, random, HAppS-State
 Build-Type:       Simple
