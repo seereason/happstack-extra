@@ -54,3 +54,7 @@ $(mkMethods ''Accounts
                 [ 'authenticate
                 , 'create
                 ])
+
+-- delete NOTE: if an account is deleted, and a new account is created
+-- with the same usernanme, will the new user have access to stuff
+-- from the old account?

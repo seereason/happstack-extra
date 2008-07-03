@@ -1,3 +1,10 @@
+haskell-happs-extra (0.4) unstable; urgency=low
+
+  * Added HAppS.Data.Account
+  * Added withSystemState
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Thu, 03 Jul 2008 01:27:20 -0700
+
 haskell-happs-extra (0.3) unstable; urgency=low
 
   * Fixed bug in tryNewSession
