@@ -4,6 +4,7 @@ Section: misc
 Maintainer: Jeremy Shaw <jeremy@n-heptane.com>
 Build-Depends: debhelper (>= 5.0),
                haskell-devscripts-cdbs,
+               cabal-debian,
                ghc6 (>= 6.8),
                ghc6-doc,
                haddock (>= 2.1.0),
@@ -12,17 +13,25 @@ Build-Depends: debhelper (>= 5.0),
                haskell-hsp-doc (>= 0.4.4),
                libghc6-harp-prof (>= 0.4),
                haskell-harp-doc (>= 0.4),
-	       libghc6-happs-server-prof,
-	       haskell-happs-server-doc,
-	       trhsx
+               libghc6-happs-server-prof,
+               haskell-happs-server-doc,
+               libghc6-happs-ixset-prof,
+               haskell-happs-ixset-doc,
+               libghc6-happs-data-prof,
+               haskell-happs-data-doc,
+               libghc6-happs-util-prof,
+               haskell-happs-util-doc,
+               libghc6-mtl-prof,
+               libghc6-mtl-doc,
+               libghc6-happs-state-prof,
+               haskell-happs-state-doc,
+               trhsx
 Standards-Version: 3.7.2.2
 
 Package: libghc6-happs-extra-dev
 Architecture: any
 Section: libdevel
-Depends: ${haskell:Depends},
-         libghc6-hsp-dev (>= 0.4.4),
-         libghc6-harp-dev (>= 0.4)
+Depends: ${haskell:Depends}
 Description: Components built on top of HAppS+HSP
   A collection of components built on top of HAppS+HSP, including
   Google Analytics, a Calendar widget, and more.
@@ -35,10 +44,7 @@ Description: Components built on top of HAppS+HSP
 Package: libghc6-happs-extra-prof
 Architecture: any
 Section: libdevel
-Depends: ${haskell:Depends},
-         libghc6-happs-extra-dev,
-         libghc6-hsp-prof (>= 0.4.4),
-         libghc6-harp-prof (>= 0.4)
+Depends: ${haskell:Depends}
 Description: Components built on top of HAppS+HSP
   A collection of components built on top of HAppS+HSP, including
   Google Analytics, a Calendar widget, and more.
@@ -51,10 +57,7 @@ Description: Components built on top of HAppS+HSP
 Package: haskell-happs-extra-doc
 Architecture: all
 Section: libdevel
-Depends: ${haskell:Depends},
-         ghc6-doc,
-         haskell-hsp-doc (>= 0.4.4),
-         haskell-harp-doc (>= 0.4)
+Depends: ${haskell:Depends}
 Description: Components built on top of HAppS+HSP
   A collection of components built on top of HAppS+HSP, including
   Google Analytics, a Calendar widget, and more.
