@@ -1,5 +1,5 @@
 Name:             HAppS-Extra
-Version:          0.4
+Version:          0.6
 License:          BSD3
 Author:           jeremy@n-heptane.com
 Maintainer:       jeremy@n-heptane.com
@@ -9,7 +9,7 @@ Description:      A collection of components built on top of HAppS+HSP, includin
                   Google Analytics, a Calendar widget, and more.
 
 Hs-Source-Dirs:   src
-Exposed-Modules:  HSP.Google.Analytics, HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password,
+Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password,
 		  HAppS.Data.Session, HAppS.State.Extra, HAppS.Data.Account
                   
 Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4, HAppS-IxSet, HAppS-Data, HAppS-Util, mtl, random, HAppS-State

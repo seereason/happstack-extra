@@ -1,3 +1,9 @@
+haskell-happs-extra (0.6) unstable; urgency=low
+
+  * added HSP.HTML.Extra.showHTML
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Thu, 10 Jul 2008 17:04:41 -0700
+
 haskell-happs-extra (0.5) unstable; urgency=low
 
   * Add build dependency on cabal-debian so that haskell:Depends gets
