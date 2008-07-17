@@ -13,8 +13,6 @@ Build-Depends: debhelper (>= 5.0),
                haskell-hsp-doc (>= 0.4.4),
                libghc6-harp-prof (>= 0.4),
                haskell-harp-doc (>= 0.4),
-               libghc6-happs-server-prof,
-               haskell-happs-server-doc,
                libghc6-happs-ixset-prof,
                haskell-happs-ixset-doc,
                libghc6-happs-data-prof,
@@ -25,7 +23,10 @@ Build-Depends: debhelper (>= 5.0),
                libghc6-mtl-doc,
                libghc6-happs-state-prof,
                haskell-happs-state-doc,
-               trhsx
+               libghc6-html-prof,
+               libghc6-html-doc,
+               libghc6-happs-server-prof (>= 0.9.2.2),
+               haskell-happs-server-doc (>= 0.9.2.2)
 Standards-Version: 3.7.2.2
 
 Package: libghc6-happs-extra-dev
