@@ -6,7 +6,7 @@ import Text.Html
 -- |a 404 page which shows the failed Request as Html
 debug404 :: (Monad m) => ServerPartT m Response
 debug404 =
-    withRequest $ \rq -> notFound (toResponse (prettyRequest rq))
+    withRequest $ \rq -> notFound (setValidator noopValidator (toResponse (prettyRequest rq)))
 
 -- |pretty print the Request as Html
 prettyRequest :: Request -> Html
