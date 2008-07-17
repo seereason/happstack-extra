@@ -4,7 +4,7 @@ import HAppS.Server
 import Text.Html
 
 -- |a 404 page which shows the failed Request as Html
-debug404 :: ServerPart Response
+debug404 :: (Monad m) => ServerPartT m Response
 debug404 =
     withRequest $ \rq -> notFound (toResponse (prettyRequest rq))
 
