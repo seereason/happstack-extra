@@ -1,7 +1,17 @@
 {-# LANGUAGE TemplateHaskell, UndecidableInstances, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving #-}
-module HAppS.Data.Account where
+module HAppS.Data.Account 
+    ( Account(..)
+    , Accounts(..)
+    , UserId(..)
+    , Username(..)
+    , Authenticate(..)
+    , Create(..)
+    , defaultAccounts
+    )
+    where
 
 import Control.Monad.Reader
+import Control.Monad.State
 import Data.Maybe
 import Data.Generics
 import HAppS.Data
@@ -10,33 +20,55 @@ import HAppS.Data.IxSet.Extra
 import HAppS.Data.User.Password
 import HAppS.State
 
-$(deriveAll [''Eq, ''Ord, ''Show, ''Read]
+$(deriveAll [''Enum, ''Eq, ''Integral, ''Num, ''Ord, ''Read, ''Real, ''Show, ''Default]
   [d|
+      newtype UserId = UserId Integer
+    |])
+$(deriveSerialize ''UserId)
+instance Version UserId
+
+$(deriveAll [''Show, ''Read, ''Default, ''Eq, ''Ord]
+  [d| 
       data Account a = Account { username :: Username 
-                               , password :: Password 
+                               , userId   :: UserId
+                               , password :: Password
                                , acctData :: a
                                }
-      newtype Username = Username String
-    |])
+      newtype Username = Username { unUsername :: String }
+   |])
 $(deriveSerialize ''Username)
 instance Version Username
 $(deriveSerialize ''Account)
 instance (Version a) => Version (Account a)
 
-$(inferIxSet "Accounts" ''Account 'noCalcs [''Username])
+$(inferIxSet "AccountIxSet" ''Account 'noCalcs [''Username, ''UserId])
+
+data (Data a, Ord a) => Accounts a
+    = Accounts { nextId :: UserId
+               , accountIxSet :: AccountIxSet a
+               }
+      deriving (Typeable, Data, Read, Show)
+
+$(deriveSerialize ''Accounts)
+instance (Version a) => Version (Accounts a)
+
+defaultAccounts :: (Data a, Ord a) => Accounts a
+defaultAccounts = Accounts { nextId = 0
+                           , accountIxSet = empty
+                           }
 
 -- |authenicate a user
 -- On failure, returns Nothing.
 -- On success, the account data for the user is returned.
-authenticate :: (Data a, Ord a) => 
+authenticate :: (Data a, Ord a) =>
                 String -- ^ username
              -> String -- ^ plain-text password 
              -> Query (Accounts a) (Maybe (Account a))
 authenticate username password =
-    do accts <- ask
+    do accts <- liftM accountIxSet ask
        case getOne (accts @= (Username username)) of
          Nothing -> return Nothing
-         (Just acct@(Account _ pw acctData)) -> 
+         (Just acct@(Account _ _ pw acctData)) -> 
              if checkPassword pw password
                 then return (Just acct)
                 else return Nothing
@@ -44,13 +76,16 @@ authenticate username password =
 -- |create a new account
 -- returns False if account already exists
 -- returns True on success
-create :: (Data a, Ord a) => Account a -> Update (Accounts a) Bool
-create acct =
-    testAndInsert (isNull . (@= (gFind' acct :: Username))) acct
-    where
-      isNull = isNothing . getOne
+create :: (Data a, Ord a) => Username -> Password -> a -> Update (Accounts a) (Either String UserId)
+create username password acctData =
+    do (Accounts nextId accountIxSet) <- get
+       case (getOne (accountIxSet @= username)) of
+         Just _ -> return (Left $ "username " ++ gFind' username ++ " already in use.")
+         Nothing ->
+             do put (Accounts (succ nextId) (insert (Account username nextId password acctData) accountIxSet))
+                return (Right nextId)
 
-$(mkMethods ''Accounts 
+$(mkMethods ''Accounts
                 [ 'authenticate
                 , 'create
                 ])

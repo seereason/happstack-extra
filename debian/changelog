@@ -1,3 +1,9 @@
+haskell-happs-extra (0.8) unstable; urgency=low
+
+  * Add userId to HAppS.Data.Accounts
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Tue, 26 Aug 2008 14:07:12 -0700
+
 haskell-happs-extra (0.7) unstable; urgency=low
 
   * Added HAppS.Server.Extra.prettyRequest and debug404
