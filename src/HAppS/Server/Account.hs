@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell, UndecidableInstances, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving #-}
-module HAppS.Data.Account 
+-- |Simple account support. See http://src.seereason.com/examples/happs-logon-example/
+module HAppS.Server.Account 
     ( Account(..)
     , Accounts(..)
     , UserId(..)

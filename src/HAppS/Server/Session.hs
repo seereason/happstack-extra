@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell, UndecidableInstances, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving #-}
-module HAppS.Data.Session 
+-- |Simple session support. See http://src.seereason.com/examples/happs-logon-example/
+module HAppS.Server.Session 
     ( -- * Basic Types
       SessionId(..)
     , Session(..)
@@ -9,6 +10,9 @@ module HAppS.Data.Session
     , UpdateSession(..)
     , DelSession(..)
     , newSession
+    , withSessionId
+    , withSessionData
+    , withSessionDataSP
     )
     where
 
@@ -20,6 +24,7 @@ import HAppS.Data
 import HAppS.Data.IxSet
 import HAppS.Data.IxSet.Extra
 import HAppS.State
+import HAppS.Server (ServerPartT(..), WebT(..), withDataFn, webQuery, readCookieValue, noHandle, multi)
 import System.Random
 
 $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default, ''Num]
@@ -81,3 +86,23 @@ newSession sessData =
        if r
           then return sessId
           else newSession sessData
+
+
+withSessionId :: (Monad m) => (SessionId -> [ServerPartT m r]) -> ServerPartT m r
+withSessionId = withDataFn (readCookieValue "sessionId")
+
+withSessionData :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a -> WebT m r) -> WebT m r
+withSessionData sID f =
+    do mSessionData <- webQuery (GetSession sID)
+       case mSessionData of
+         Nothing -> noHandle
+         (Just (Session _ sessionData)) ->
+             f sessionData
+
+withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a -> [ServerPartT m r]) -> ServerPartT m r
+withSessionDataSP sID f =
+    do mSessionData <- query (GetSession sID)
+       case mSessionData of
+         Nothing -> ServerPartT $ const noHandle
+         (Just (Session _ sessionData)) ->
+             multi (f sessionData)

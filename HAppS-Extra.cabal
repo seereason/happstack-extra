@@ -1,5 +1,5 @@
 Name:             HAppS-Extra
-Version:          0.8
+Version:          0.9
 License:          BSD3
 Author:           jeremy@n-heptane.com
 Maintainer:       jeremy@n-heptane.com
@@ -10,7 +10,7 @@ Description:      A collection of components built on top of HAppS+HSP, includin
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password,
-		  HAppS.Data.Session, HAppS.State.Extra, HAppS.Data.Account, HAppS.Server.Extra
+		  HAppS.Server.Session, HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Extra
                   
 Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4, HAppS-IxSet, HAppS-Data, HAppS-Util, mtl, random, HAppS-State, html, HAppS-Server >= 0.9.2.2
 Build-Type:       Simple
