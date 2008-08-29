@@ -2,8 +2,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans -F -pgmF trhsx #-}
 module HSP.AnyM where
 
-import HSP
+import Data.Maybe (fromMaybe) -- for demos at bottom
+import Data.List (lookup)     -- for demos at bottom
 import Control.Monad.Identity
+import Control.Monad.Reader   -- for demos at bottom
+import HSP
 import qualified HSX.XMLGenerator as HSX
 
 newtype (Functor m, Monad m) => AnyM m a = AnyM { runAnyM :: m a }
@@ -43,6 +46,12 @@ instance (Monad m, Functor m) => EmbedAsChild (AnyM m) Char where
 
 instance (Monad m, Functor m) => EmbedAsChild (AnyM m) String where
     asChild = XMLGenT . return . (:[]) . IChild . pcdata
+
+instance (Monad m, Functor m) => EmbedAsChild (AnyM m) (AnyM m String) where
+    asChild c = 
+        do c' <- lift c
+           lift . return . (:[]) . IChild . pcdata $ c'
+--           return . (:[]) . IChild . 
 
 
 
@@ -88,8 +97,27 @@ page =
      </body>
     </html>
 
-test :: IO ()
-test = evalAnyM page >>= putStrLn . renderAsHTML
+testIO :: IO ()
+testIO = evalAnyM page >>= putStrLn . renderAsHTML
 
-test2 :: IO ()
-test2 = putStrLn (renderAsHTML (runIdentity (evalAnyM page)))
+testIdentity :: IO ()
+testIdentity = putStrLn (renderAsHTML (runIdentity (evalAnyM page)))
+
+testReader :: IO ()
+testReader = putStrLn (renderAsHTML (runReader (evalAnyM page') [("title","sweet!"), ("paragraph","rock!") ]))
+    where
+      lookup' :: String -> AnyM (Reader [(String, String)]) String
+      lookup' n = AnyM $
+          do env <- ask
+             return $ fromMaybe (n ++" not found in environment.") $ lookup n env
+      page' :: AnyMXML (Reader [(String, String)])
+      page' = 
+          <html>
+           <head>
+            <title><% lookup' "title" %></title>
+           </head>
+           <body>
+            <p><% lookup' "paragraph" %></p>
+            <p><% lookup' "doesNotExist" %></p>
+           </body>
+          </html>
