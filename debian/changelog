@@ -1,3 +1,9 @@
+haskell-happs-extra (0.10) unstable; urgency=low
+
+  * Added HSP.Identity
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Thu, 28 Aug 2008 16:59:07 -0700
+
 haskell-happs-extra (0.9) unstable; urgency=low
 
   * Move HAppS.Data.Session and Acounts to HAppS.Server.*
