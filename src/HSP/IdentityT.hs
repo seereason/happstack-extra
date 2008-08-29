@@ -1,6 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, TypeFamilies, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans -F -pgmF trhsx #-}
-module HSP.IdentityT where
+module HSP.IdentityT 
+    ( evalIdentityT
+    , IdentT
+    ) where
 
 import Data.Maybe (fromMaybe) -- for demos at bottom
 import Data.List (lookup)     -- for demos at bottom
@@ -100,9 +103,9 @@ insert = (:)
 evalIdentityT :: (Functor m, Monad m) => XMLGenT (IdentityT m) XML -> m XML
 evalIdentityT = runIdentityT . HSX.unXMLGenT
 
-type IdentityTXML m = XMLGenT (IdentityT m) XML
+type IdentT m = XMLGenT (IdentityT m) XML
 
-page :: (Monad m, Functor m) => IdentityTXML m
+page :: (Monad m, Functor m) => IdentT m
 page = 
     <html>
      <head>
@@ -126,7 +129,7 @@ testReader = putStrLn (renderAsHTML (runReader (evalIdentityT page') [("title","
       lookup' n = lift $
           do env <- ask
              return $ fromMaybe (n ++" not found in environment.") $ lookup n env
-      page' :: IdentityTXML (Reader [(String, String)])
+      page' :: IdentT (Reader [(String, String)])
       page' =
           <html>
            <head>
