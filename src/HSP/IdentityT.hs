@@ -1,23 +1,37 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, TypeFamilies, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans -F -pgmF trhsx #-}
-module HSP.AnyM where
+module HSP.IdentityT where
 
 import Data.Maybe (fromMaybe) -- for demos at bottom
 import Data.List (lookup)     -- for demos at bottom
 import Control.Monad.Identity
 import Control.Monad.Reader   -- for demos at bottom
+import Control.Monad.Trans
 import HSP
 import qualified HSX.XMLGenerator as HSX
 
-newtype (Functor m, Monad m) => AnyM m a = AnyM { runAnyM :: m a }
-    deriving (Functor, Monad)
+-- * IdentityT Monad Transformer
 
-instance (Monad m, Functor m) => HSX.XMLGenerator (AnyM m)
+newtype (Monad m) => IdentityT m a = IdentityT { runIdentityT :: m a }
+    deriving (Monad)
 
-instance (Functor m, Monad m) => HSX.XMLGen (AnyM m) where
-    type HSX.XML (AnyM m) = XML
-    newtype HSX.Child (AnyM m) = IChild { unIChild :: XML }
-    newtype HSX.Attribute (AnyM m) = IAttr { unIAttr :: Attribute }
+instance (Functor m, Monad m) => Functor (IdentityT m) where
+    fmap f = IdentityT . fmap f . runIdentityT
+
+instance MonadTrans IdentityT where
+    lift = IdentityT
+
+instance (MonadIO m) => MonadIO (IdentityT m) where
+    liftIO = IdentityT . liftIO
+
+-- * HSX.XMLGenerator for IdentityT
+
+instance (Monad m, Functor m) => HSX.XMLGenerator (IdentityT m)
+
+instance (Functor m, Monad m) => HSX.XMLGen (IdentityT m) where
+    type HSX.XML (IdentityT m) = XML
+    newtype HSX.Child (IdentityT m) = IChild { unIChild :: XML }
+    newtype HSX.Attribute (IdentityT m) = IAttr { unIAttr :: Attribute }
     genElement n attrs children = HSX.XMLGenT $ 
                                   do attrs'    <- HSX.unXMLGenT (fmap (map unIAttr . concat) (sequence attrs))
                                      children' <- HSX.unXMLGenT (fmap (map unIChild . concat) (sequence children))
@@ -25,50 +39,50 @@ instance (Functor m, Monad m) => HSX.XMLGen (AnyM m) where
     xmlToChild = IChild
 
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (AnyM m) Attribute where
+instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) Attribute where
     asAttr = return . (:[]) . IAttr 
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (AnyM m) (Attr String Char) where
+instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Char) where
     asAttr (n := c)  = asAttr (n := [c])
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (AnyM m) (Attr String String) where
+instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String String) where
     asAttr (n := str)  = asAttr $ MkAttr (toName n, pAttrVal str)
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (AnyM m) (Attr String Bool) where
+instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Bool) where
     asAttr (n := True)  = asAttr $ MkAttr (toName n, pAttrVal "true")
     asAttr (n := False) = asAttr $ MkAttr (toName n, pAttrVal "false")
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (AnyM m) (Attr String Int) where
+instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Int) where
     asAttr (n := i)  = asAttr $ MkAttr (toName n, pAttrVal (show i))
 
-instance (Monad m, Functor m) => EmbedAsChild (AnyM m) Char where
+instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) Char where
     asChild = XMLGenT . return . (:[]) . IChild . pcdata . (:[])
 
-instance (Monad m, Functor m) => EmbedAsChild (AnyM m) String where
+instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) String where
     asChild = XMLGenT . return . (:[]) . IChild . pcdata
 
-instance (Monad m, Functor m) => EmbedAsChild (AnyM m) (AnyM m String) where
+instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) (IdentityT m String) where
     asChild c = 
         do c' <- lift c
            lift . return . (:[]) . IChild . pcdata $ c'
 
-instance (Monad m, Functor m) => EmbedAsChild (AnyM m) XML where
+instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) XML where
     asChild = XMLGenT . return . (:[]) . IChild
 
-instance (Monad m, Functor m) => AppendChild (AnyM m) XML where
+instance (Monad m, Functor m) => AppendChild (IdentityT m) XML where
  appAll xml children = do
         chs <- children
         case xml of
          CDATA _ _       -> return xml
          Element n as cs -> return $ Element n as (cs ++ (map stripChild chs))
 
-stripAttr :: (Monad m, Functor m) => HSX.Attribute (AnyM m) -> Attribute
+stripAttr :: (Monad m, Functor m) => HSX.Attribute (IdentityT m) -> Attribute
 stripAttr  (IAttr a) = a
 
-stripChild :: (Monad m, Functor m) => HSX.Child (AnyM m) -> XML
+stripChild :: (Monad m, Functor m) => HSX.Child (IdentityT m) -> XML
 stripChild (IChild c) = c
 
-instance (Monad m, Functor m) => SetAttr (AnyM m) XML where
+instance (Monad m, Functor m) => SetAttr (IdentityT m) XML where
  setAll xml hats = do
         attrs <- hats
         case xml of
@@ -78,12 +92,12 @@ instance (Monad m, Functor m) => SetAttr (AnyM m) XML where
 insert :: Attribute -> Attributes -> Attributes
 insert = (:)
 
-evalAnyM :: (Functor m, Monad m) => XMLGenT (AnyM m) XML -> m XML
-evalAnyM = runAnyM . HSX.unXMLGenT
+evalIdentityT :: (Functor m, Monad m) => XMLGenT (IdentityT m) XML -> m XML
+evalIdentityT = runIdentityT . HSX.unXMLGenT
 
-type AnyMXML m = XMLGenT (AnyM m) XML
+type IdentityTXML m = XMLGenT (IdentityT m) XML
 
-page :: (Monad m, Functor m) => AnyMXML m
+page :: (Monad m, Functor m) => IdentityTXML m
 page = 
     <html>
      <head>
@@ -95,19 +109,19 @@ page =
     </html>
 
 testIO :: IO ()
-testIO = evalAnyM page >>= putStrLn . renderAsHTML
+testIO = evalIdentityT page >>= putStrLn . renderAsHTML
 
 testIdentity :: IO ()
-testIdentity = putStrLn (renderAsHTML (runIdentity (evalAnyM page)))
+testIdentity = putStrLn (renderAsHTML (runIdentity (evalIdentityT page)))
 
 testReader :: IO ()
-testReader = putStrLn (renderAsHTML (runReader (evalAnyM page') [("title","sweet!"), ("paragraph","rock!") ]))
+testReader = putStrLn (renderAsHTML (runReader (evalIdentityT page') [("title","sweet!"), ("paragraph","rock!") ]))
     where
-      lookup' :: String -> AnyM (Reader [(String, String)]) String
-      lookup' n = AnyM $
+      lookup' :: String -> IdentityT (Reader [(String, String)]) String
+      lookup' n = lift $
           do env <- ask
              return $ fromMaybe (n ++" not found in environment.") $ lookup n env
-      page' :: AnyMXML (Reader [(String, String)])
+      page' :: IdentityTXML (Reader [(String, String)])
       page' =
           <html>
            <head>
