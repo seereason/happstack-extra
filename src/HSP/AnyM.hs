@@ -51,9 +51,6 @@ instance (Monad m, Functor m) => EmbedAsChild (AnyM m) (AnyM m String) where
     asChild c = 
         do c' <- lift c
            lift . return . (:[]) . IChild . pcdata $ c'
---           return . (:[]) . IChild . 
-
-
 
 instance (Monad m, Functor m) => EmbedAsChild (AnyM m) XML where
     asChild = XMLGenT . return . (:[]) . IChild
@@ -111,7 +108,7 @@ testReader = putStrLn (renderAsHTML (runReader (evalAnyM page') [("title","sweet
           do env <- ask
              return $ fromMaybe (n ++" not found in environment.") $ lookup n env
       page' :: AnyMXML (Reader [(String, String)])
-      page' = 
+      page' =
           <html>
            <head>
             <title><% lookup' "title" %></title>
