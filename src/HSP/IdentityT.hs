@@ -4,6 +4,7 @@ module HSP.IdentityT where
 
 import Data.Maybe (fromMaybe) -- for demos at bottom
 import Data.List (lookup)     -- for demos at bottom
+import Control.Applicative
 import Control.Monad.Identity
 import Control.Monad.Reader   -- for demos at bottom
 import Control.Monad.Trans
@@ -23,6 +24,10 @@ instance MonadTrans IdentityT where
 
 instance (MonadIO m) => MonadIO (IdentityT m) where
     liftIO = IdentityT . liftIO
+
+instance (Functor m, Monad m) => Applicative (IdentityT m) where
+    pure = return
+    (<*>) = ap
 
 -- * HSX.XMLGenerator for IdentityT
 
