@@ -3,6 +3,7 @@
 module HSP.IdentityT 
     ( evalIdentityT
     , IdentT
+    , IdentityT(..)
     ) where
 
 import Data.Maybe (fromMaybe) -- for demos at bottom
