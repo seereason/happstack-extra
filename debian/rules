@@ -1,2 +1,6 @@
 #!/usr/bin/make -f
 include /usr/share/haskell-devscripts/hlibrary.mk
+
+# How to install an extra file into the documentation package
+#binary-fixup/haskell-HAppS-Extra-doc::
+#	echo "Some informative text" > debian/haskell-HAppS-Extra-doc/usr/share/doc/haskell-HAppS-Extra-doc/AnExtraDocFile
