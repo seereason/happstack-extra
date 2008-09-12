@@ -1,3 +1,11 @@
+haskell-happs-extra (0.13) unstable; urgency=low
+
+  * Account: Added Text.RJSon instance for UserId
+  * Session: monkeyed around with withSession* functions
+  * State: added liftUpdate and liftQuery
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Thu, 11 Sep 2008 17:10:14 -0700
+
 haskell-happs-extra (0.12) unstable; urgency=low
 
   * ToMessage: hardcode charset=utf-8 since that is all toMessage supports

@@ -30,6 +30,8 @@ Build-Depends: debhelper (>= 5.0),
                libghc6-html-doc,
                libghc6-mtl-prof,
                libghc6-mtl-doc,
+               libghc6-rjson-prof,
+               haskell-rjson-doc,
                libghc6-utf8-string-prof,
                haskell-utf8-string-doc,
                trhsx
