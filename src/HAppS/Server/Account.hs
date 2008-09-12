@@ -20,6 +20,7 @@ import HAppS.Data.IxSet
 import HAppS.Data.IxSet.Extra
 import HAppS.Data.User.Password
 import HAppS.State
+import Text.RJson
 
 $(deriveAll [''Enum, ''Eq, ''Integral, ''Num, ''Ord, ''Read, ''Real, ''Show, ''Default]
   [d|
@@ -27,6 +28,14 @@ $(deriveAll [''Enum, ''Eq, ''Integral, ''Num, ''Ord, ''Read, ''Real, ''Show, ''D
     |])
 $(deriveSerialize ''UserId)
 instance Version UserId
+
+
+instance ToJson UserId where
+    toJson (UserId uId) = toJson uId
+
+instance FromJson UserId where
+    fromJson _  = fmap UserId . fromJson undefined
+
 
 $(deriveAll [''Show, ''Read, ''Default, ''Eq, ''Ord]
   [d| 
