@@ -24,7 +24,7 @@ import HAppS.Data
 import HAppS.Data.IxSet
 import HAppS.Data.IxSet.Extra
 import HAppS.State
-import HAppS.Server (ServerPartT(..), WebT(..), withDataFn, webQuery, readCookieValue, noHandle, multi)
+import HAppS.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
 import System.Random
 
 $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default, ''Num]
@@ -99,10 +99,13 @@ withSessionData sID f =
          (Just (Session _ sessionData)) ->
              f sessionData
 
-withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a -> [ServerPartT m r]) -> ServerPartT m r
-withSessionDataSP sID f =
-    do mSessionData <- query (GetSession sID)
-       case mSessionData of
-         Nothing -> ServerPartT $ const noHandle
-         (Just (Session _ sessionData)) ->
-             multi (f sessionData)
+withSessionDataSP' :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a -> [ServerPartT m r]) -> ServerPartT m r
+withSessionDataSP' sID f =
+       do mSessionData <- liftIO (query (GetSession sID))
+          case mSessionData of
+            Nothing -> anyRequest noHandle
+            (Just (Session _ sessionData)) ->
+               multi (f sessionData)
+
+withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => (a -> [ServerPartT m r]) -> ServerPartT m r
+withSessionDataSP f = withSessionId (\sID -> [withSessionDataSP' sID f])

@@ -4,7 +4,6 @@ import HAppS.Server(Request(..), Response(..), ServerPartT(..), noopValidator
                    , notFound, setValidator, toResponse, withRequest)
 import Text.Html
 
-
 -- |a 404 page which shows the failed Request as Html
 debug404 :: (Monad m) => ServerPartT m Response
 debug404 =
