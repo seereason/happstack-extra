@@ -11,29 +11,29 @@ Build-Depends: debhelper (>= 5.0),
                haddock (>= 2.1.0),
                ghc6-prof,
                libghc6-happs-data-prof,
-               haskell-happs-data-doc,
+               libghc6-happs-data-doc,
                libghc6-happs-ixset-prof,
-               haskell-happs-ixset-doc,
+               libghc6-happs-ixset-doc,
                libghc6-happs-server-prof (>= 0.9.2.2),
-               haskell-happs-server-doc (>= 0.9.2.2),
+               libghc6-happs-server-doc (>= 0.9.2.2),
                libghc6-happs-state-prof,
-               haskell-happs-state-doc,
+               libghc6-happs-state-doc,
                libghc6-happs-util-prof,
-               haskell-happs-util-doc,
+               libghc6-happs-util-doc,
                libghc6-harp-prof (>= 0.4),
-               haskell-harp-doc (>= 0.4),
+               libghc6-harp-doc (>= 0.4),
                libghc6-hsp-prof (>= 0.4.4),
-               haskell-hsp-doc (>= 0.4.4),
+               libghc6-hsp-doc (>= 0.4.4),
                libghc6-hsx-prof (>= 0.4.4),
-               haskell-hsx-doc (>= 0.4.4),
+               libghc6-hsx-doc (>= 0.4.4),
                libghc6-html-prof,
-               libghc6-html-doc,
+               libghc66-html-doc,
                libghc6-mtl-prof,
                libghc6-mtl-doc,
                libghc6-rjson-prof,
-               haskell-rjson-doc,
+               libghc6-rjson-doc,
                libghc6-utf8-string-prof,
-               haskell-utf8-string-doc,
+               libghc6-utf8-string-doc,
                trhsx
 Standards-Version: 3.7.2.2
 
@@ -63,8 +63,8 @@ Description: Components built on top of HAppS+HSP
   .
   This package contains the libraries compiled with profiling enabled.
 
-Package: haskell-happs-extra-doc
-Architecture: all
+Package: libghc6-happs-extra-doc
+Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
 Description: Components built on top of HAppS+HSP
