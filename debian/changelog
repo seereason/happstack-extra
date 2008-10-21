@@ -1,3 +1,12 @@
+haskell-happs-extra (0.14) unstable; urgency=low
+
+  * Add lookPairsPacked to retrieve the form data without unpacking
+  * Add lookPairsUnicode, which decodes the UTF8 form data into Unicode
+  * Add helperfunction utf8toUnicode
+  * Add entityList and entityMap, the HTML entities supported in HTML5
+
+ -- David Fox <dsf@seereason.com>  Tue, 21 Oct 2008 11:04:56 -0700
+
 haskell-happs-extra (0.13) unstable; urgency=low
 
   * Account: Added Text.RJSon instance for UserId
