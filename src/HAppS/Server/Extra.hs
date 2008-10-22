@@ -1,5 +1,6 @@
 module HAppS.Server.Extra where
 
+import Control.Arrow ((***))
 import Control.Monad.Reader (asks)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -22,23 +23,28 @@ prettyRequest :: Request -> Html
 prettyRequest (Request method paths uri query inputs cookies version headers body' peer)
           = thehtml ((thetitle (toHtml "404"))  +++
                      (body ((h1 (toHtml "Requested object not found.")) +++
-                            (table
-                             ((tr (td (toHtml "method")  +++ (td (toHtml (show method)))))  +++
-                              (tr (td (toHtml "paths")   +++ (td (toHtml (show paths)))))   +++
-                              (tr (td (toHtml "uri")     +++ (td (toHtml (show uri)))))     +++
-                              (tr (td (toHtml "query")   +++ (td (toHtml query))))          +++
-                              (tr (td (toHtml "inputs")  +++ (td (toHtml (show inputs)))))  +++
-                              (tr (td (toHtml "cookies") +++ (td (toHtml (show cookies))))) +++
-                              (tr (td (toHtml "version") +++ (td (toHtml (show version))))) +++
-                              (tr (td (toHtml "headers") +++ (td (toHtml (show headers))))) +++
-                              (tr (td (toHtml "peer")    +++ (td (toHtml (show peer)))))    +++
-                              (tr (td (toHtml "body")    +++ (td (toHtml (show body')))))
+                            (dlist
+                             (((define (toHtml "method")  +++ (ddef (toHtml (show method)))))  +++
+                              ((define (toHtml "paths")   +++ (ddef (prettyList (map toHtml paths))))) +++
+                              ((define (toHtml "uri")     +++ (ddef (toHtml uri))))     +++
+                              ((define (toHtml "query")   +++ (ddef (toHtml query))))          +++
+                              ((define (toHtml "inputs")  +++ (ddef (prettyDlist (map (toHtml *** (toHtml . show)) inputs)))))  +++
+                              ((define (toHtml "cookies") +++ (ddef (prettyDlist (map (toHtml *** (toHtml . show)) cookies)))))  +++
+                              ((define (toHtml "version") +++ (ddef (toHtml (show version))))) +++
+                              ((define (toHtml "headers") +++ (ddef (prettyDlist (map ((toHtml . show) *** (toHtml . show)) (Map.toList headers)))))) +++
+                              ((define (toHtml "peer")    +++ (ddef (toHtml (show peer)))))    +++
+                              ((define (toHtml "body")    +++ (ddef (toHtml (show body')))))
                              )
                             )
                            )
                      )
                     )
 
+prettyList :: [Html] -> Html
+prettyList = ulist . foldr (+++) noHtml . map li 
+
+prettyDlist :: [(Html, Html)] -> Html
+prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
 
 -- |A version of HAppS lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
