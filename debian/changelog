@@ -1,3 +1,9 @@
+haskell-happs-extra (0.14.1) unstable; urgency=low
+
+  * Improved debug404 look and feel
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Wed, 22 Oct 2008 14:51:02 -0700
+
 haskell-happs-extra (0.14) unstable; urgency=low
 
   * Add lookPairsPacked to retrieve the form data without unpacking
