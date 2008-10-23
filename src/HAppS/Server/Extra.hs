@@ -1,15 +1,29 @@
-module HAppS.Server.Extra where
+module HAppS.Server.Extra 
+    ( debug404
+    , prettyRequest
+    , prettyList
+    , prettyDlist
+    , withURL
+    , lookPairsPacked
+    , lookPairsUnicode
+    , utf8ToUnicode
+    , entityMap
+    , entityPairs
+    ) where
 
+import Control.Applicative
 import Control.Arrow ((***))
-import Control.Monad.Reader (asks)
+import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
-import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), noopValidator
-                   , notFound, setValidator, toResponse, withRequest)
+import Data.Maybe (fromJust)
+import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), noopValidator
+                   , notFound, setValidator, toResponse, withRequest, rqURL)
 import HAppS.Server.HTTP.Types (Input(inputValue))
+import Network.URI (URI, parseRelativeReference)
 import Text.Html
 import Text.Regex (mkRegexWithOpts, matchRegexAll)
 
@@ -45,6 +59,10 @@ prettyList = ulist . foldr (+++) noHtml . map li
 
 prettyDlist :: [(Html, Html)] -> Html
 prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
+
+-- |Retrieve and parse the request URL and pass it to f.
+withURL :: (URI -> WebT m a) -> ServerPartT m a
+withURL f = withRequest (f . fromJust . parseRelativeReference . rqURL)
 
 -- |A version of HAppS lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
@@ -2125,4 +2143,12 @@ entityPairs =
      ("zscr", 0x1D4CF),
      ("zwj", 0x0200D),
      ("zwnj", 0x0200C)]
-     
+
+-- * Simple Applicative and Alternative instances for RqData via ReaderT
+instance (Monad m) => Applicative (ReaderT r m) where
+    pure = return
+    (<*>) = ap
+
+instance (MonadPlus m) => Alternative (ReaderT r m) where
+    empty = unwrapMonad empty
+    f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)

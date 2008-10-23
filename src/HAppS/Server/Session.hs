@@ -13,18 +13,24 @@ module HAppS.Server.Session
     , withSessionId
     , withSessionData
     , withSessionDataSP
+    , withMSessionId
+    , withMSessionData
+    , withMSessionDataSP
     )
     where
 
+import Control.Applicative (optional)
+import Control.Monad.Error (MonadIO)
 import Control.Monad.State hiding (State)
-import Control.Monad.Reader
-import Data.Generics
-import Data.Maybe
+import Control.Monad.Reader (liftIO, ask)
+import Data.Generics (Data)
+import Data.Maybe (fromJust, isNothing)
 import HAppS.Data
 import HAppS.Data.IxSet
 import HAppS.Data.IxSet.Extra
 import HAppS.State
 import HAppS.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
+import HAppS.Server.Extra ()
 import System.Random
 
 $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default, ''Num]
@@ -109,3 +115,28 @@ withSessionDataSP' sID f =
 
 withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => (a -> [ServerPartT m r]) -> ServerPartT m r
 withSessionDataSP f = withSessionId (\sID -> [withSessionDataSP' sID f])
+
+withMSessionId :: (Monad m) => (Maybe SessionId -> [ServerPartT m r]) -> ServerPartT m r
+withMSessionId = withDataFn (optional (readCookieValue "sessionId"))
+
+withMSessionData :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (Maybe a -> WebT m r) -> WebT m r
+withMSessionData sID f =
+    do mSessionData <- webQuery (GetSession sID)
+       case mSessionData of
+         Nothing -> f Nothing
+         (Just (Session _ sessionData)) ->
+             f (Just sessionData)
+
+withMSessionDataSP' :: (Ord a, Serialize a, Data a, MonadIO m) => Maybe SessionId -> (Maybe a -> [ServerPartT m r]) -> ServerPartT m r
+withMSessionDataSP' Nothing f = multi (f Nothing)
+withMSessionDataSP' (Just sID) f =
+    do mSessionData <- liftIO . query . GetSession $ sID
+       case mSessionData of
+         Nothing -> multi (f Nothing)
+         (Just (Session _ sessionData)) ->
+             multi (f (Just sessionData))
+
+withMSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => (Maybe a -> [ServerPartT m r]) -> ServerPartT m r
+withMSessionDataSP f =
+    withMSessionId (\sID -> [withMSessionDataSP' sID f])
+    where
