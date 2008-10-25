@@ -1,3 +1,9 @@
+haskell-happs-extra (0.16) unstable; urgency=low
+
+  * Add cookieFixer which correctly parses googles cookies
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Fri, 24 Oct 2008 19:19:56 -0700
+
 haskell-happs-extra (0.15) unstable; urgency=low
 
   * Add withMSessionDataSP et. al. to HAppS.Server.Session

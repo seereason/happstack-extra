@@ -38,6 +38,8 @@ Build-Depends: debhelper (>= 5.0),
                libghc6-rjson-doc,
                libghc6-utf8-string-prof,
                libghc6-utf8-string-doc,
+	       libghc6-parsec-prof,
+	       libghc6-parsec-doc,
                trhsx
 Standards-Version: 3.7.2.2
 
