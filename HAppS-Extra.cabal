@@ -1,8 +1,8 @@
 Name:             HAppS-Extra
-Version:          0.16
+Version:          0.17
 License:          BSD3
-Author:           jeremy@n-heptane.com
-Maintainer:       jeremy@n-heptane.com
+Author:           jeremy@seereason.com
+Maintainer:       partners@seereason.com
 
 Synopsis:         Components built on top of HAppS+HSP
 Description:      A collection of components built on top of HAppS+HSP, including

@@ -1,3 +1,9 @@
+haskell-happs-extra (0.17) unstable; urgency=low
+
+  * Re-implement withURI so it does what you would expect.
+
+ -- David Fox <dsf@seereason.com>  Mon, 27 Oct 2008 11:24:38 -0700
+
 haskell-happs-extra (0.16) unstable; urgency=low
 
   * Add cookieFixer which correctly parses googles cookies

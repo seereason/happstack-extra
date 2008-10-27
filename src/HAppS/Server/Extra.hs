@@ -3,7 +3,7 @@ module HAppS.Server.Extra
     , prettyRequest
     , prettyList
     , prettyDlist
-    , withURL
+    , withURI
     , lookPairsPacked
     , lookPairsUnicode
     , utf8ToUnicode
@@ -61,8 +61,12 @@ prettyDlist :: [(Html, Html)] -> Html
 prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
 
 -- |Retrieve and parse the request URL and pass it to f.
-withURL :: (URI -> WebT m a) -> ServerPartT m a
-withURL f = withRequest (f . fromJust . parseRelativeReference . rqURL)
+withURI :: (URI -> WebT m a) -> ServerPartT m a
+withURI f =
+    withRequest (f . fromJust . parseRelativeReference . rqURL)
+    -- The definition of rqURL in HAppS doesn't do what I would
+    -- expect.  In fact, I don't really understand what it does.
+    where rqURL rq = rqUri rq ++ rqQuery rq
 
 -- |A version of HAppS lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
