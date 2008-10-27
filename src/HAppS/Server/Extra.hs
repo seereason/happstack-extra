@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), noopValidator
+import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), multi, noopValidator
                    , notFound, setValidator, toResponse, withRequest, rqURL)
 import HAppS.Server.HTTP.Types (Input(inputValue))
 import Network.URI (URI, parseRelativeReference)
@@ -64,6 +64,16 @@ prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
 withURI :: (URI -> WebT m a) -> ServerPartT m a
 withURI f =
     withRequest (f . fromJust . parseRelativeReference . rqURL)
+    -- The definition of rqURL in HAppS doesn't do what I would
+    -- expect.  In fact, I don't really understand what it does.
+    where rqURL rq = rqUri rq ++ rqQuery rq
+
+-- |Retrieve and parse the request URL and pass it to f.
+withURISP :: (Monad m) => (URI -> [ServerPartT m a]) -> ServerPartT m a
+withURISP f =
+    ServerPartT $ \request ->
+        let uri = fromJust . parseRelativeReference . rqURL $ request
+        in (unServerPartT (multi (f uri))) request
     -- The definition of rqURL in HAppS doesn't do what I would
     -- expect.  In fact, I don't really understand what it does.
     where rqURL rq = rqUri rq ++ rqQuery rq
