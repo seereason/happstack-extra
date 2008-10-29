@@ -1,3 +1,9 @@
+haskell-happs-extra (0.18) unstable; urgency=low
+
+  * Added withURISP
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Wed, 29 Oct 2008 14:26:02 -0700
+
 haskell-happs-extra (0.17) unstable; urgency=low
 
   * Re-implement withURI so it does what you would expect.

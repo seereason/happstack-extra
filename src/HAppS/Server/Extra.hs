@@ -4,6 +4,7 @@ module HAppS.Server.Extra
     , prettyList
     , prettyDlist
     , withURI
+    , withURISP
     , lookPairsPacked
     , lookPairsUnicode
     , utf8ToUnicode
@@ -20,10 +21,10 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), multi, noopValidator
+import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), getHeader, multi, noopValidator
                    , notFound, setValidator, toResponse, withRequest, rqURL)
 import HAppS.Server.HTTP.Types (Input(inputValue))
-import Network.URI (URI, parseRelativeReference)
+import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
 import Text.Regex (mkRegexWithOpts, matchRegexAll)
 
@@ -72,11 +73,15 @@ withURI f =
 withURISP :: (Monad m) => (URI -> [ServerPartT m a]) -> ServerPartT m a
 withURISP f =
     ServerPartT $ \request ->
-        let uri = fromJust . parseRelativeReference . rqURL $ request
+        let mHost = B.unpack <$> getHeader "host" request
+            mAuthority =
+                case mHost of
+                  Nothing -> Nothing
+                  (Just str) ->
+                      case span (/= ':') str of
+                        (host, port) -> Just (URIAuth "" host port)
+            uri = (URI "http" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
         in (unServerPartT (multi (f uri))) request
-    -- The definition of rqURL in HAppS doesn't do what I would
-    -- expect.  In fact, I don't really understand what it does.
-    where rqURL rq = rqUri rq ++ rqQuery rq
 
 -- |A version of HAppS lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
