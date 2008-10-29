@@ -80,7 +80,7 @@ withURISP f =
                   (Just str) ->
                       case span (/= ':') str of
                         (host, port) -> Just (URIAuth "" host port)
-            uri = (URI "http" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
+            uri = (URI "http:" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
         in (unServerPartT (multi (f uri))) request
 
 -- |A version of HAppS lookPairs that doesn't unpack its values.
