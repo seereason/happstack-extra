@@ -2,7 +2,8 @@
 -- |Simple session support. See http://src.seereason.com/examples/happs-logon-example/
 module HAppS.Server.Session 
     ( -- * Basic Types
-      SessionId(..)
+      SessionData
+    , SessionId(..)
     , Session(..)
     , Sessions
       -- * State functions
@@ -32,6 +33,8 @@ import HAppS.State
 import HAppS.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
 import HAppS.Server.Extra ()
 import System.Random
+
+class (Ord s, Serialize s, Data s, Default s) => SessionData s
 
 $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default, ''Num]
    [d|

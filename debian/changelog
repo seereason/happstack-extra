@@ -1,3 +1,10 @@
+haskell-happs-extra (0.19) unstable; urgency=low
+
+  * Add HAppS.Server.Account.Server module, with ServerParts to
+    implement the signUp/SignIn/signOut system.
+
+ -- David Fox <dsf@seereason.com>  Thu, 06 Nov 2008 11:14:52 -0800
+
 haskell-happs-extra (0.18) unstable; urgency=low
 
   * Added withURISP

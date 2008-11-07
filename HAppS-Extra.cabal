@@ -1,5 +1,5 @@
 Name:             HAppS-Extra
-Version:          0.18
+Version:          0.19
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -11,10 +11,10 @@ Description:      A collection of components built on top of HAppS+HSP, includin
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HAppS.Extra, 
 		  HAppS.Data.IxSet.Extra, HAppS.Data.User.Password, HAppS.Server.Session, 
-		  HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Extra, HAppS.Server.HSP.HTML,	
-		  HAppS.Server.CookieFixer
+		  HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Account.Server,
+		  HAppS.Server.Extra, HAppS.Server.HSP.HTML, HAppS.Server.CookieFixer
                   
-Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4, HAppS-IxSet, HAppS-Data, HAppS-Util, mtl, random, HAppS-State, html, HAppS-Server >= 0.9.2.2, hsx >= 0.4.4, utf8-string, bytestring, RJson, regex-compat, containers, network, parsec
+Build-Depends:    base, hsp >= 0.4.4, harp >= 0.4, Extra >= 1.27, HAppS-IxSet, HAppS-Data, HAppS-Util, mtl, random, HAppS-State, html, HAppS-Server >= 0.9.2.2, hsx >= 0.4.4, utf8-string, bytestring, RJson, regex-compat, containers, network, parsec
 Build-Type:       Simple
 Category:         Web, Language
 
