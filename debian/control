@@ -42,6 +42,14 @@ Build-Depends: debhelper (>= 5.0),
                libghc6-utf8-string-doc,
 	       libghc6-parsec-prof,
 	       libghc6-parsec-doc,
+	       libghc6-applicative-extras-prof,
+	       libghc6-applicative-extras-doc,
+	       libghc6-formlets-prof,
+	       libghc6-formlets-doc,
+	       libghc6-formlets-hsp-prof,
+	       libghc6-formlets-hsp-doc,
+	       libghc6-syb-with-class-prof,
+	       libghc6-syb-with-class-doc,
                trhsx
 Standards-Version: 3.7.2.2
 

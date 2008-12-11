@@ -1,3 +1,9 @@
+haskell-happs-extra (0.21) unstable; urgency=low
+
+  * Add HSP.Formlets.Generics, generate formlets generically.
+
+ -- David Fox <dsf@seereason.com>  Thu, 11 Dec 2008 11:35:40 -0800
+
 haskell-happs-extra (0.20) unstable; urgency=low
 
   * Add HAppS.Server.Main.main, a main function that does things all our
