@@ -1,3 +1,9 @@
+haskell-happs-extra (0.22) unstable; urgency=low
+
+  * New version of HSP.Formlets.Generics.
+
+ -- David Fox <dsf@seereason.com>  Sat, 13 Dec 2008 11:18:30 -0800
+
 haskell-happs-extra (0.21) unstable; urgency=low
 
   * Add HSP.Formlets.Generics, generate formlets generically.
