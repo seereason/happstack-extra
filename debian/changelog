@@ -1,3 +1,10 @@
+haskell-happs-extra (0.23) unstable; urgency=low
+
+  * Label the inputs with the constructor and field name of the parent
+    type.
+
+ -- David Fox <dsf@seereason.com>  Sun, 14 Dec 2008 09:49:15 -0800
+
 haskell-happs-extra (0.22) unstable; urgency=low
 
   * New version of HSP.Formlets.Generics.

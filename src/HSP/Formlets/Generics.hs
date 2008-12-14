@@ -1,13 +1,36 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, ScopedTypeVariables, TemplateHaskell, TypeFamilies, TypeSynonymInstances, UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall -fglasgow-exts -fallow-undecidable-instances -fallow-incoherent-instances -fno-warn-unused-imports #-}
+{-# OPTIONS_GHC -Wall -fglasgow-exts -fallow-undecidable-instances -fallow-incoherent-instances -fno-warn-unused-imports -fno-warn-missing-signatures -fno-warn-name-shadowing #-}
+-- |Use Scrap Your Boilerplate with Class to convert arbitrary values
+-- to formlets, forms that can be initialized with a value of the type
+-- and can, after being suitably filled out, return any other value of
+-- that type.
 module HSP.Formlets.Generics
-    ( allDefaultValues
-    , hidden'
-    , radioButtons
-    , FormletOf(formletOf)
+    ( FormletOf(formletOf)
     , FormletOfD(formletOfD)
     , formletOfProxy
+    -- * Wrapper functions - used to implement @FormletOf@ instances
     , formlet
+    , formletOfSet
+    , formletOfMaybe
+    , formletOfList
+    , formlet1
+    , formlet2
+    , formlet3
+    , formlet4
+    , formlet5
+    , formlet6
+    , formlet7
+    , formlet8
+    , formlet9
+    , formlet10
+    , formlet11
+    , formlet12
+    , formlet13
+    , formlet14
+    , formlet15
+    , formlet16
+    -- * Helper functions
+    , radioButtons
     ) where
 
 import Control.Applicative -- (Applicative, (<$>), (<*>))
@@ -39,13 +62,14 @@ allDefaultValues x = res
                         error ("allDefaultValues: Bad DataRep: " ++ show r)
 
 -- |Hide a value of any instance of Show and Read.
-hidden' :: (Show a, Read a, Monad v, HSX.XMLGenerator x) => a -> FormHSXT x v a
+hidden' :: (Read a, Show a, Monad v, HSX.XMLGenerator x) => a -> FormHSXT x v a
+-- hidden' x = hidden (Just (show x)) `check` (Success . read) -- maybeRead' ("Failure in hidden: " ++ show x)
 hidden' x = hidden (Just (show x)) `check` (`maybeRead'` ("Failure in hidden: " ++ show x))
 
 -- |Generate radio buttons selecting the different constructors of an
 -- algebraic type, but ignoring any fields that might be associated
 -- with the different constructors.
-radioButtons :: forall a. forall x. forall v. (Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+radioButtons :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
                          (a -> String) -> ([(a, String)] -> Maybe a -> FormHSXT x v a) -> Maybe a -> FormHSXT x v a
 radioButtons labelFn selectFn x =
     selectFn pairs x
@@ -56,10 +80,13 @@ radioButtons labelFn selectFn x =
       replace (Just x) x' = if toConstr formletOfProxy x' == toConstr formletOfProxy x then x else x'
       replace Nothing x' = x'
 
-class (Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where
+-- |A class of values that can be converted into formlets.
+class (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where
     formletOf :: (HSX.XMLGenerator x, Monad v, Applicative v) =>
-                 Bool		-- ^ If false make a form that only returns values with the same constructor as x
-              -> a		-- ^ The type the form returns, and the value it is initialized with
+                 Bool           -- ^ If false make a form that only returns values with the same constructor as @x@,
+                                -- if true checkboxes and other form elements are included to return any values of
+                                -- type @a@.
+              -> a              -- ^ The type the form returns, and the value it is initialized with
               -> FormHSXT x v a
 
 data FormletOfD a =
@@ -71,12 +98,21 @@ formletOfProxy = error "urk"
 instance FormletOf t => Sat (FormletOfD t) where
     dict = FormletOfD { formletOfD = formletOf }
 
--- |We need to wrap the formlet method in a function because there are
--- some cases we know how to handle that can't be distinguished by
--- specifying the type of an instance.  Specifically, if none of the
--- constructors of an algebraic type have fields we can generate the
--- formlet automatically, otherwise we need to call the method and
--- enter a specialized instance.
+-- |Call 'formlet' and wrap the result in a div with a class name
+-- constructed from the constructor and field names of the containing
+-- algebraic type.
+formlet' :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+            (a, Constr, String) -> FormHSXT x v a
+formlet' (x, constr, field) = div (showConstr constr ++ "." ++ field) $ formlet x
+
+-- |This function calls the 'formletOf' method to convert any value
+-- into a formlet.  The only difference between this wrapper function
+-- and calling the 'formletOf' method directly is the computation of
+-- the union flag.  Here the flag gets set to true whenever there are
+-- multiple constructors, while in certain places, such as in
+-- formletOfSet, we want to call formletOf directly with the flag set
+-- to @False@ to get a form that only returns a particular
+-- constructor.
 formlet :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
                   a -> FormHSXT x v a
 formlet x =
@@ -106,18 +142,29 @@ instance Ord Constr where
     compare a b = compare (showConstr a) (showConstr b)
 
 instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf (S.Set a) where
-    formletOf union xs =
-        -- This code puts all the checkboxes at the top and the fields
-        -- associated with each checkbox below.  This may not always be
-        -- the desired arrangement.
-        -- Put the fields after all the checkboxes
-        -- ((,) <$> (sequenceA checks) <*> (sequenceA fields)) `check` makeSet
-        -- Put the fields directly after the associated checkbox
-        sequenceA (map (\ (check, field) -> (,) <$> check <*> field) (zip checks fields)) `check` makeSet'
+    formletOf _ xs = formletOfSet xs
+
+instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf (Maybe a) where
+    formletOf _ mx = formletOfMaybe mx
+
+instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf [a] where
+    formletOf _ xs = formletOfList xs
+
+-- Primitive types
+instance FormletOf Integer where formletOf _ n = inputInteger (Just n)
+instance FormletOf String where formletOf _ s = input (Just s)
+
+-- |Create a formlet for a set of elements of an algebraic type.  It
+-- is assumed that only one element with a particular constructor can
+-- be in the set.
+formletOfSet :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+                S.Set a -> FormHSXT x v (S.Set a)
+formletOfSet xs =
+        sequenceA (map (\ (check, field) -> (,) <$> check <*> field) (zip checks fields)) `check` makeSet
         where
           -- The checkboxes
           -- checks :: [FormHSXT x v Bool]
-          checks = map (\ c -> checkbox (c `S.member` cs) (Just (showConstr c))) constrs
+          checks = map (\ c -> label (showConstr c) (checkbox (c `S.member` cs) (Just (showConstr c)))) constrs
               where
                 cs = S.map (toConstr formletOfProxy) xs
           -- The data fields for each of the type's constructors
@@ -133,27 +180,139 @@ instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf (S.S
                 currentMap = M.fromList (map (\ x -> (toConstr formletOfProxy x, x)) (S.toList xs))
                 allDefaults = allDefaultValues (defaultValue :: a)
           -- Construct the new set
-          makeSet :: ([Bool], [a]) -> Failing (S.Set a)
-          makeSet (checks, values) = Success . S.fromList . mask $ zip checks values
-          makeSet' :: [(Bool, a)] -> Failing (S.Set a)
-          makeSet' pairs = Success . S.fromList . mask $ pairs
+          makeSet :: [(Bool, a)] -> Failing (S.Set a)
+          makeSet pairs = Success . S.fromList . mask $ pairs
           mask :: [(Bool, a)] -> [a]
           mask pairs = catMaybes $ map (\ (b, x) -> if b then Just x else Nothing) pairs
           constrs = dataTypeConstrs (dataTypeOf formletOfProxy (defaultValue :: a))
 
 -- |Treat a maybe as a "all that apply" set with a single element.
-instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf (Maybe a) where
-    formletOf _ mx = formlet (S.fromList (maybeToList mx)) `check` (Success . listToMaybe . S.elems)
+formletOfMaybe :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+                  Maybe a -> FormHSXT x v (Maybe a)
+formletOfMaybe mx = formlet (S.fromList (maybeToList mx)) `check` (Success . listToMaybe . S.elems)
 
 -- |Display the elements of a list with an extra defaultValue added.
 -- This extra value is removed if it is still equal to defaultValue.
-instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf [a] where
-    formletOf _ xs = 
+formletOfList :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+                 [a] -> FormHSXT x v [a]
+formletOfList xs =
         frm `check` stripExtra
         where
           frm = sequenceA . map formlet $ xs ++ [defaultValue :: a]
           stripExtra xs' = Success $ if last xs' == defaultValue then init xs' else xs'
 
--- Primitive types
-instance FormletOf Integer where formletOf _ n = div "Integer" $ inputInteger (Just n)
-instance FormletOf String where formletOf _ s = div "String" $ input (Just s)
+-- |Convert a record with one argument.  We need to pass the
+-- constructor and field name so they can be included in the class of
+-- the div which is wrapped around the resulting xml.
+formlet1 :: forall t. forall a. forall x. forall v.
+            (Read t, Show t, Ord t, Default t, Data FormletOfD t,
+             Read a, Show a, Ord a, Default a, Data FormletOfD a,
+             HSX.XMLGenerator x, Applicative v, Monad v) => (a -> t) -> a -> FormHSXT x v t
+formlet1  con a =
+    con <$> formlet' (a, constr, a')
+    where
+      [a'] = constrFields constr
+      constr = toConstr formletOfProxy (con a)
+
+-- |Convert a record with two arguments.
+formlet2 :: forall t. forall a. forall b. forall x. forall v.
+            (Read t, Show t, Ord t, Default t, Data FormletOfD t,
+             Read a, Show a, Ord a, Default a, Data FormletOfD a,
+             Read b, Show b, Ord b, Default b, Data FormletOfD b,
+             HSX.XMLGenerator x, Applicative v, Monad v) => (a -> b -> t) -> a -> b -> FormHSXT x v t
+formlet2 con a b =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b')
+    where
+      [a', b'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b)
+
+-- |Convert a record with three arguments.
+formlet3 :: forall t. forall a. forall b. forall c. forall x. forall v.
+            (Read t, Show t, Ord t, Default t, Data FormletOfD t,
+             Read a, Show a, Ord a, Default a, Data FormletOfD a,
+             Read b, Show b, Ord b, Default b, Data FormletOfD b,
+             Read c, Show c, Ord c, Default c, Data FormletOfD c,
+             HSX.XMLGenerator x, Applicative v, Monad v) => (a -> b -> c -> t) -> a -> b -> c -> FormHSXT x v t
+formlet3  con a b c =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c')
+    where
+      [a', b', c'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c)
+
+formlet4  con a b c d =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d')
+    where
+      [a', b', c', d'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d)
+
+formlet5  con a b c d e =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e')
+    where
+      [a', b', c', d', e'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e)
+
+formlet6  con a b c d e f =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f')
+    where
+      [a', b', c', d', e', f'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f)
+
+formlet7  con a b c d e f g =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g')
+    where
+      [a', b', c', d', e', f', g'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g)
+
+formlet8  con a b c d e f g h =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h')
+    where
+      [a', b', c', d', e', f', g', h'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h)
+
+formlet9  con a b c d e f g h i =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i')
+    where
+      [a', b', c', d', e', f', g', h', i'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i)
+
+formlet10 con a b c d e f g h i j =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j')
+    where
+      [a', b', c', d', e', f', g', h', i', j'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j)
+
+formlet11 con a b c d e f g h i j k =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k)
+
+formlet12 con a b c d e f g h i j k l =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k') <*> formlet' (l, constr, l')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k', l'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k l)
+
+formlet13 con a b c d e f g h i j k l m =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k') <*> formlet' (l, constr, l') <*> formlet' (m, constr, m')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k', l', m'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k l m)
+
+formlet14 con a b c d e f g h i j k l m n =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k') <*> formlet' (l, constr, l') <*> formlet' (m, constr, m') <*> formlet' (n, constr, n')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k l m n)
+
+formlet15 con a b c d e f g h i j k l m n o =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k') <*> formlet' (l, constr, l') <*> formlet' (m, constr, m') <*> formlet' (n, constr, n') <*> formlet' (o, constr, o')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k l m n o)
+
+formlet16 con a b c d e f g h i j k l m n o p =
+    con <$> formlet' (a, constr, a') <*> formlet' (b, constr, b') <*> formlet' (c, constr, c') <*> formlet' (d, constr, d') <*> formlet' (e, constr, e') <*> formlet' (f, constr, f') <*> formlet' (g, constr, g') <*> formlet' (h, constr, h') <*> formlet' (i, constr, i') <*> formlet' (j, constr, j') <*> formlet' (k, constr, k') <*> formlet' (l, constr, l') <*> formlet' (m, constr, m') <*> formlet' (n, constr, n') <*> formlet' (o, constr, o') <*> formlet' (p, constr, p')
+    where
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o', p'] = constrFields constr
+      constr = toConstr formletOfProxy (con a b c d e f g h i j k l m n o p)
