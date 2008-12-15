@@ -159,7 +159,7 @@ formletOfSet xs =
         where
           -- The checkboxes
           -- checks :: [FormHSXT x v Bool]
-          checks = map (\ c -> label (showConstr c) (checkbox (c `S.member` cs) (Just (showConstr c)))) constrs
+          checks = map (\ c -> {- label (showConstr c) -} (checkbox (c `S.member` cs) (Just (showConstr c)))) constrs
               where
                 cs = S.map (toConstr formletOfProxy) xs
           -- The data fields for each of the type's constructors
