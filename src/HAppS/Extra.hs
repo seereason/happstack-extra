@@ -3,7 +3,7 @@ module HAppS.Extra
  , module HAppS.Data.User.Password
  , module HAppS.Server.Account
  , module HAppS.Server.Extra
- , import HAppS.Server.HSP.HTML
+ , module HAppS.Server.HSP.HTML
  , module HAppS.Server.Main
  , module HAppS.Server.Session
  , module HAppS.Server.SimpleHTTP
