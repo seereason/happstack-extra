@@ -1,3 +1,9 @@
+haskell-happs-extra (0.24) unstable; urgency=low
+
+  * Add some Functor instances to HAppS.Server.SimpleHTTP.Extra.
+
+ -- David Fox <dsf@seereason.com>  Mon, 15 Dec 2008 16:39:36 -0800
+
 haskell-happs-extra (0.23) unstable; urgency=low
 
   * Label the inputs with the constructor and field name of the parent
