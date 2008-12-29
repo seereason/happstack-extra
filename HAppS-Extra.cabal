@@ -9,7 +9,7 @@ Description:      A collection of components built on top of HAppS+HSP, includin
                   Google Analytics, a Calendar widget, and more.
 
 Hs-Source-Dirs:   src
-Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.Formlets.Generics,
+Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.Formlets.Generics, HSP.Formlets.Util,
 		  HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password, HAppS.Server.Session, 
 		  HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Account.Server, HAppS.Server.SimpleHTTP.Extra,
 		  HAppS.Server.Extra, HAppS.Server.HSP.HTML, HAppS.Server.CookieFixer, HAppS.Server.Main
