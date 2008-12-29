@@ -62,19 +62,21 @@ allDefaultValues x = res
                     r ->
                         error ("allDefaultValues: Bad DataRep: " ++ show r)
 
+data FormStatus = Enabled | Disabled deriving Eq
+
 -- |A class of values that can be converted into formlets.
 class (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where
     formletOf :: (HSX.XMLGenerator x, Monad v, Applicative v) =>
-                 Bool           -- ^ Controls treatment of union types.  If false, the form will
+                 FormStatus     -- ^ Should the form be initially enabled?
+              -> Bool           -- ^ Controls treatment of union types.  If false, the form will
                                 -- only generate values with the same constructor as @x@, if true
                                 -- a choice form will be generated which allows values using any
                                 -- of the constructors in the union.
-              -> Bool           -- ^ Should the form be initially enabled?
               -> a              -- ^ The type the form returns, and the value it is initialized with
               -> FormHSXT x v a
 
 data FormletOfD a =
-    FormletOfD { formletOfD :: (HSX.XMLGenerator x, Monad v, Applicative v) => Bool -> Bool -> a -> FormHSXT x v a }
+    FormletOfD { formletOfD :: (HSX.XMLGenerator x, Monad v, Applicative v) => FormStatus -> Bool -> a -> FormHSXT x v a }
 
 formletOfProxy :: Proxy FormletOfD
 formletOfProxy = error "urk"
@@ -86,7 +88,7 @@ instance FormletOf t => Sat (FormletOfD t) where
 -- constructed from the constructor and field names of the containing
 -- algebraic type.
 formlet' :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-            Bool -> Constr -> String -> a -> FormHSXT x v a
+            FormStatus -> Constr -> String -> a -> FormHSXT x v a
 formlet' e constr field x = X.field (showConstr constr) field `plug` formlet e x
 
 -- |This function calls the 'formletOf' method to convert any value
@@ -98,7 +100,7 @@ formlet' e constr field x = X.field (showConstr constr) field `plug` formlet e x
 -- to @False@ to get a form that only returns a particular
 -- constructor.
 formlet :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                  Bool -> a -> FormHSXT x v a
+                  FormStatus -> a -> FormHSXT x v a
 formlet e x =
     case dataTypeRep t of
       AlgRep constrs ->
@@ -120,7 +122,7 @@ formletOfAny e union x =
           -- for these.
         | all (== []) (map constrFields constrs) ->
             if union
-            then radioButtons (showConstr . toConstr formletOfProxy) (radio' e) (Just x)
+            then radioButtons (showConstr . toConstr formletOfProxy) (radio' (e == Enabled)) (Just x)
             else hidden' x
         | otherwise -> error $ "Missing formletOf instance for type " ++ show (dataTypeName (dataTypeOf formletOfProxy x)) ++ " (" ++ show x ++ ")"
       _ -> error $ "Missing formletOf instance for type " ++ show (dataTypeName (dataTypeOf formletOfProxy x)) ++ " (" ++ show x ++ ")"
@@ -148,16 +150,14 @@ $(deriveNewData [''S.Set])
 -- is assumed that only one element with a particular constructor can
 -- be in the set.
 formletOfSet :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                Bool -> S.Set a -> FormHSXT x v (S.Set a)
+                FormStatus -> S.Set a -> FormHSXT x v (S.Set a)
 formletOfSet e xs =
         ((,) <$> (X.someof `plug` sequenceA checks) <*> (X.forms `plug` sequenceA fields)) `check` makeSet
         --X.someof `plug` sequenceA (map (\ (check, field) -> X.choice `plug` ((,) <$> check <*> field)) (zip checks fields)) `check` makeSet
         where
           -- The checkboxes
           -- checks :: [FormHSXT x v Bool]
-          checks = map (\ c -> checkbox e (c `S.member` cs) (Just (showConstr c))) constrs
-              where
-                cs = S.map (toConstr formletOfProxy) xs
+          checks = map (\ c -> checkbox (e == Enabled) (c `S.member` cs) (Just (showConstr c))) constrs
           -- The data fields for each of the type's constructors
           fields :: [FormHSXT x v a]
           fields =
@@ -165,18 +165,10 @@ formletOfSet e xs =
               map (\ c -> X.choice `plug` frm (initial c)) constrs
               where
                 frm :: a -> FormHSXT x v a
-                frm x = formletOfD dict (e && enabled x) False x
-                -- The initial value for each constructor
-                initial :: Constr -> a
-                initial c = M.findWithDefault (error $ "Unexpected constructor: " ++ showConstr c) c initialMap
-                    where initialMap = M.fromList (map (\ (c, x) -> (c, M.findWithDefault x c m)) (zip constrs defaults))
-                          m = M.fromList (map (\ x -> (toConstr formletOfProxy x, x)) (S.toList xs))
-                -- If x is in the set enable the corresponding form.  We need to add
-                -- and argument to formletOf to use this value.
+                frm x = formletOfD dict (if enabled x then e else Disabled) False x
+                -- If x is in the set, enable the corresponding form.
                 enabled :: a -> Bool
-                enabled x = isJust (M.findWithDefault Nothing c m)
-                    where c = toConstr formletOfProxy x
-                          m = M.fromList (map (\ x -> (toConstr formletOfProxy x, x)) (map Just (S.toList xs)))
+                enabled x = (toConstr formletOfProxy x) `S.member` cs
           -- Construct the new set
           --makeSet :: [(Bool, a)] -> Failing (S.Set a)
           --makeSet pairs = Success . S.fromList . mask $ pairs
@@ -185,7 +177,14 @@ formletOfSet e xs =
               where
                 mask :: [(Bool, a)] -> [a]
                 mask pairs = catMaybes $ map (\ (b, x) -> if b then Just x else Nothing) pairs
+          -- The initial value for each constructor - either a member
+          -- of xs or one of the default values.
+          initial :: Constr -> a
+          initial c = M.findWithDefault (error $ "Unexpected constructor: " ++ showConstr c) c initialMap
+              where initialMap = M.fromList (map (\ (c, x) -> (c, M.findWithDefault x c m)) (zip constrs defaults))
+                    m = M.fromList (map (\ x -> (toConstr formletOfProxy x, x)) (S.toList xs))
           defaults = allDefaultValues (defaultValue :: a)
+          cs = S.map (toConstr formletOfProxy) xs
           constrs = dataTypeConstrs (dataTypeOf formletOfProxy (undefined :: a))
 
 -- |The treatment of the type (Maybe a) depends on a.  If a is a union
@@ -193,13 +192,13 @@ formletOfSet e xs =
 -- it is ignored (or treated as an error?)  Otherwise it is treated as
 -- a set with either one element or none.
 formletOfMaybe :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                  Bool -> Maybe a -> FormHSXT x v (Maybe a)
+                  FormStatus -> Maybe a -> FormHSXT x v (Maybe a)
 formletOfMaybe e mx = formlet e (S.fromList (maybeToList mx)) `check` (Success . listToMaybe . S.elems)
 
 -- |Display the elements of a list with an extra defaultValue added.
 -- This extra value is removed if it is still equal to defaultValue.
 formletOfList :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                 Bool -> [a] -> FormHSXT x v [a]
+                 FormStatus -> [a] -> FormHSXT x v [a]
 formletOfList e xs =
         frm `check` stripExtra
         where
@@ -213,13 +212,13 @@ formletOfList e xs =
 -- |Convert a generic value into a formlet.  This code only handles
 -- the case of a union type whose constructors all have arity zero.
 -- Other cases must be handled in specialized instances.
-instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where formletOf union x = formletOfAny union x
+instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where formletOf e union x = formletOfAny e union x
 instance FormletOf a => FormletOf (S.Set a) where formletOf e _ xs = formletOfSet e xs
 instance FormletOf a => FormletOf (Maybe a) where formletOf e _ mx = formletOfMaybe e mx
 instance FormletOf a => FormletOf [a] where formletOf e _ xs = formletOfList e xs
-instance FormletOf Integer where formletOf e _ n = inputInteger e (Just n)
-instance FormletOf String where formletOf e _ s = input e (Just s)
-instance FormletOf Bool where formletOf e _ b = checkbox e b Nothing
+instance FormletOf Integer where formletOf e _ n = inputInteger (e == Enabled) (Just n)
+instance FormletOf String where formletOf e _ s = input (e == Enabled) (Just s)
+instance FormletOf Bool where formletOf e _ b = checkbox (e == Enabled) b Nothing
 
 -- |Convert a record with one argument.  We need to pass the
 -- constructor and field name so they can be included in the class of
@@ -227,7 +226,7 @@ instance FormletOf Bool where formletOf e _ b = checkbox e b Nothing
 formlet1 :: forall t. forall a. forall x. forall v.
             (Read t, Show t, Ord t, Default t, Data FormletOfD t,
              Read a, Show a, Ord a, Default a, Data FormletOfD a,
-             HSX.XMLGenerator x, Applicative v, Monad v) => Bool -> (a -> t) -> a -> FormHSXT x v t
+             HSX.XMLGenerator x, Applicative v, Monad v) => FormStatus -> (a -> t) -> a -> FormHSXT x v t
 formlet1  e con a =
     case constrFields constr of
       [a'] -> con <$> formlet' e constr a' a
@@ -242,7 +241,7 @@ formlet2 :: forall t. forall a. forall b. forall x. forall v.
             (Read t, Show t, Ord t, Default t, Data FormletOfD t,
              Read a, Show a, Ord a, Default a, Data FormletOfD a,
              Read b, Show b, Ord b, Default b, Data FormletOfD b,
-             HSX.XMLGenerator x, Applicative v, Monad v) => Bool -> (a -> b -> t) -> a -> b -> FormHSXT x v t
+             HSX.XMLGenerator x, Applicative v, Monad v) => FormStatus -> (a -> b -> t) -> a -> b -> FormHSXT x v t
 formlet2  e con a b =
     case constrFields constr of
       [a', b'] -> con <$> formlet' e constr a' a <*> formlet' e constr b' b
@@ -258,7 +257,7 @@ formlet3 :: forall t. forall a. forall b. forall c. forall x. forall v.
              Read a, Show a, Ord a, Default a, Data FormletOfD a,
              Read b, Show b, Ord b, Default b, Data FormletOfD b,
              Read c, Show c, Ord c, Default c, Data FormletOfD c,
-             HSX.XMLGenerator x, Applicative v, Monad v) => Bool -> (a -> b -> c -> t) -> a -> b -> c -> FormHSXT x v t
+             HSX.XMLGenerator x, Applicative v, Monad v) => FormStatus -> (a -> b -> c -> t) -> a -> b -> c -> FormHSXT x v t
 formlet3  e con a b c =
     case constrFields constr of
       [a', b', c'] -> con <$> formlet' e constr a' a <*> formlet' e constr b' b <*> formlet' e constr c' c
