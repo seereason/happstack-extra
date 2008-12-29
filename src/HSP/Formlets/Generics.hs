@@ -270,130 +270,117 @@ formlet3  e con a b c =
 
 formlet4  en con a b c d =
     case constrFields constr of
-      [a', b', c', d'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d
+      [a', b', c', d'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet4: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d
-      formlet'' = formlet' en
 
 formlet5  en con a b c d e =
     case constrFields constr of
-      [a', b', c', d', e'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e
+      [a', b', c', d', e'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet5: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e
-      formlet'' = formlet' en
 
 formlet6  en con a b c d e f =
     case constrFields constr of
-      [a', b', c', d', e', f'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f
+      [a', b', c', d', e', f'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet6: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f
-      formlet'' = formlet' en
 
 formlet7  en con a b c d e f g =
     case constrFields constr of
-      [a', b', c', d', e', f', g'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g
+      [a', b', c', d', e', f', g'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet7: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g
-      formlet'' = formlet' en
 
 formlet8  en con a b c d e f g h =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h
+      [a', b', c', d', e', f', g', h'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet8: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h
-      formlet'' = formlet' en
 
 formlet9  en con a b c d e f g h i =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i
+      [a', b', c', d', e', f', g', h', i'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet9: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i
-      formlet'' = formlet' en
 
 formlet10 en con a b c d e f g h i j =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j
+      [a', b', c', d', e', f', g', h', i', j'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet10: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j
-      formlet'' = formlet' en
 
 formlet11 en con a b c d e f g h i j k =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k
+      [a', b', c', d', e', f', g', h', i', j', k'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet11: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k
-      formlet'' = formlet' en
 
 formlet12 en con a b c d e f g h i j k l =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k', l'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k <*> formlet'' constr l' l
+      [a', b', c', d', e', f', g', h', i', j', k', l'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k <*> formlet' en constr l' l
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet12: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k l
-      formlet'' = formlet' en
 
 formlet13 en con a b c d e f g h i j k l m =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k', l', m'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k <*> formlet'' constr l' l <*> formlet'' constr m' m
+      [a', b', c', d', e', f', g', h', i', j', k', l', m'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k <*> formlet' en constr l' l <*> formlet' en constr m' m
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet13: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k l m
-      formlet'' = formlet' en
 
 formlet14 en con a b c d e f g h i j k l m n =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k', l', m', n'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k <*> formlet'' constr l' l <*> formlet'' constr m' m <*> formlet'' constr n' n
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k <*> formlet' en constr l' l <*> formlet' en constr m' m <*> formlet' en constr n' n
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet14: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k l m n
-      formlet'' = formlet' en
 
 formlet15 en con a b c d e f g h i j k l m n o =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k <*> formlet'' constr l' l <*> formlet'' constr m' m <*> formlet'' constr n' n <*> formlet'' constr o' o
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k <*> formlet' en constr l' l <*> formlet' en constr m' m <*> formlet' en constr n' n <*> formlet' en constr o' o
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet15: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k l m n o
-      formlet'' = formlet' en
 
 formlet16 en con a b c d e f g h i j k l m n o p =
     case constrFields constr of
-      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o', p'] -> con <$> formlet'' constr a' a <*> formlet'' constr b' b <*> formlet'' constr c' c <*> formlet'' constr d' d <*> formlet'' constr e' e <*> formlet'' constr f' f <*> formlet'' constr g' g <*> formlet'' constr h' h <*> formlet'' constr i' i <*> formlet'' constr j' j <*> formlet'' constr k' k <*> formlet'' constr l' l <*> formlet'' constr m' m <*> formlet'' constr n' n <*> formlet'' constr o' o <*> formlet'' constr p' p
+      [a', b', c', d', e', f', g', h', i', j', k', l', m', n', o', p'] -> con <$> formlet' en constr a' a <*> formlet' en constr b' b <*> formlet' en constr c' c <*> formlet' en constr d' d <*> formlet' en constr e' e <*> formlet' en constr f' f <*> formlet' en constr g' g <*> formlet' en constr h' h <*> formlet' en constr i' i <*> formlet' en constr j' j <*> formlet' en constr k' k <*> formlet' en constr l' l <*> formlet' en constr m' m <*> formlet' en constr n' n <*> formlet' en constr o' o <*> formlet' en constr p' p
       [] -> error $ "Records without field names not supported: " ++ show x
       _ -> error ("formlet16: " ++ show x)
     where
       constr = toConstr formletOfProxy x
       x = con a b c d e f g h i j k l m n o p
-      formlet'' = formlet' en
