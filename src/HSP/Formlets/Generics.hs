@@ -5,7 +5,8 @@
 -- and can, after being suitably filled out, return any other value of
 -- that type.
 module HSP.Formlets.Generics
-    ( FormletOf(formletOf)
+    ( FormStatus(..)
+    , FormletOf(formletOf)
     , FormletOfD(formletOfD)
     , formletOfProxy
     -- * Wrapper functions - used to implement @FormletOf@ instances
