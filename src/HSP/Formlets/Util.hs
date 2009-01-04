@@ -1,8 +1,9 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -F -pgmFtrhsx -Wwarn #-}
+{-# OPTIONS_GHC -F -pgmFtrhsx -Wall -Wwarn -fno-warn-missing-signatures -fno-warn-name-shadowing -fno-warn-unused-imports #-}
 module HSP.Formlets.Util
     ( label
     , HSP.Formlets.Util.div
+    , HSP.Formlets.Util.span
     , pre
     , field
     , typename
@@ -10,30 +11,34 @@ module HSP.Formlets.Util
     , oneof
     , forms
     , choice
+    , constr
 {-  , XMLTrans(xmlTrans)
     , XMLTransD(xmlTransD) -}
     ) where
 
 import HSP
 import qualified HSX.XMLGenerator as HSX
-import Control.Applicative.Error (Failing(..))
-import Data.Generics.SYB.WithClass.Basics
 import Data.Generics.SYB.WithClass.Instances ()
 import Prelude hiding (div)
-import HSP.Formlets
 import Text.Formlets
 
+label :: (EmbedAsChild m xml, EmbedAsChild m c, Plus xml) =>
+         c -> Form xml m1 a -> Form [XMLGenT m (HSX.XML m)] m1 a
 label text frm = (\ xml -> [<div><% text %><% xml %></div>]) `plug` frm
 
 -- |Wrap some XML in a div with the given class name.
 -- div :: String -> XML -> XML
 div cls = (\ xml -> [<div class=cls><% xml %></div>])
+span cls xml = [<span class=cls><% xml %></span>]
 field c f xml = [<field constr=c name=f><% xml %></field>]
 typename n xml = [<typename name=n><% xml %></typename>]
 someof xml = [<someof><% xml %></someof>]
 oneof xml = [<oneof><% xml %></oneof>]
 forms xml = [<forms><% xml %></forms>]
-choice xml = [<choice><% xml %></choice>]
+-- |The input element that selects a constructor.
+choice n xml = [<choice name=n><% xml %></choice>]
+-- |The form data to construct the fields associated with a constructor
+constr n xml = [<constr name=n><% xml %></constr>]
 
 pre s = xml [<pre><% s %></pre>]
 

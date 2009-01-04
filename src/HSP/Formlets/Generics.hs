@@ -158,12 +158,12 @@ formletOfSet e xs =
         where
           -- The checkboxes
           -- checks :: [FormHSXT x v Bool]
-          checks = map (\ c -> checkbox (e == Enabled) (c `S.member` cs) (Just (showConstr c))) constrs
+          checks = map (\ c -> X.choice (showConstr c) `plug` checkbox (e == Enabled) (c `S.member` cs)) constrs
           -- The data fields for each of the type's constructors
           fields :: [FormHSXT x v a]
           fields =
               -- Mark each formlet with the associated constructor
-              map (\ c -> X.choice `plug` frm (initial c)) constrs
+              map (\ c -> X.constr (showConstr c) `plug` frm (initial c)) constrs
               where
                 frm :: a -> FormHSXT x v a
                 frm x = formletOfD dict (if enabled x then e else Disabled) False x
@@ -219,7 +219,7 @@ instance FormletOf a => FormletOf (Maybe a) where formletOf e _ mx = formletOfMa
 instance FormletOf a => FormletOf [a] where formletOf e _ xs = formletOfList e xs
 instance FormletOf Integer where formletOf e _ n = inputInteger (e == Enabled) (Just n)
 instance FormletOf String where formletOf e _ s = input (e == Enabled) (Just s)
-instance FormletOf Bool where formletOf e _ b = checkbox (e == Enabled) b Nothing
+instance FormletOf Bool where formletOf e _ b = checkbox (e == Enabled) b
 
 -- |Convert a record with one argument.  We need to pass the
 -- constructor and field name so they can be included in the class of

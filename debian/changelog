@@ -1,3 +1,13 @@
+haskell-happs-extra (0.25) unstable; urgency=low
+
+  * API change: defaultResult argument added to Text.Formlets.input', input'' removed
+  * API change: Last argument removed from HSP.Formlets.checkbox
+  * Add choice and constr XML functions to HSP.Formlets.Util.  The choice tag denotes
+    the checkbox or radio button, the constr tag denotes the associated input elements
+    to construct the fields.
+
+ -- David Fox <dsf@seereason.com>  Sat, 03 Jan 2009 06:21:28 -0800
+
 haskell-happs-extra (0.24) unstable; urgency=low
 
   * Add some Functor instances to HAppS.Server.SimpleHTTP.Extra.
