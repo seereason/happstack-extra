@@ -46,7 +46,7 @@ import Data.Traversable
 import qualified Data.Set as S
 import HAppS.Data (Default(..), DefaultD(..), defaultProxy, deriveNewData)
 import HSP (cdata)
-import HSP.Formlets (FormHSXT, input, labelledinput, inputInteger, hidden', radio, radio', select, checkbox, span, div)
+import HSP.Formlets (FormHSXT, input, inputInteger, hidden', radio, radio', select, checkbox, span, div)
 import qualified HSX.XMLGenerator as HSX
 import Prelude hiding (div, span)
 import qualified HSP.Formlets.Util as X
@@ -101,7 +101,7 @@ formlet' e constr field x = X.field (showConstr constr) field `plug` formlet e x
 -- to @False@ to get a form that only returns a particular
 -- constructor.
 formlet :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                  FormStatus -> a -> FormHSXT x v a
+           FormStatus -> a -> FormHSXT x v a
 formlet e x =
     case dataTypeRep t of
       AlgRep constrs ->
@@ -115,6 +115,17 @@ formlet e x =
     where
       t = dataTypeOf formletOfProxy x
 
+-- |We would like to use radio buttons to convert a value of arbitrary
+-- type to a form, but we must be careful of the case where none of
+-- the radio buttons are selected, and of the case where the form gets
+-- disabled and no value is returned.  In either case we need a
+-- default value to return.  When the form is disabled it is because a
+-- different constructor was selected in a parent type, so the value
+-- returned here will be ignored.  In the other case, we don't need to
+-- worry about no radio button being checked as long as we specify one
+-- as checked initially.
+formletOfAny :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+                FormStatus -> Bool -> a -> FormHSXT x v a
 formletOfAny e union x =
     case dataTypeRep t of
       AlgRep constrs
@@ -122,19 +133,31 @@ formletOfAny e union x =
           -- arity zero, we don't have to write special instances
           -- for these.
         | all (== []) (map constrFields constrs) ->
+            -- The radioButtons form will return Nothing when no radio buttons were checked
+            -- or when the form is disabled.  Since we initialized the form with Just x, the
+            -- first case should not occur.  In the second case the value will be discarded
+            -- so it is safe to return x.
             if union
-            then radioButtons (showConstr . toConstr formletOfProxy) (radio' (e == Enabled)) (Just x)
+            then radioButtons (showConstr . toConstr formletOfProxy) (radio' (e == Enabled)) (Just x) `check` (Success . maybe x id)
             else hidden' x
         | otherwise -> error $ "Missing formletOf instance for type " ++ show (dataTypeName (dataTypeOf formletOfProxy x)) ++ " (" ++ show x ++ ")"
       _ -> error $ "Missing formletOf instance for type " ++ show (dataTypeName (dataTypeOf formletOfProxy x)) ++ " (" ++ show x ++ ")"
     where
       t = dataTypeOf formletOfProxy x
 
+-- |The treatment of the type (Maybe a) depends on a.  If a is a union
+-- it adds the "None Chosen" choice to the selections.  If it is a set
+-- it is ignored (or treated as an error?)  Otherwise it is treated as
+-- a set with either one element or none.
+formletOfMaybe :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
+                  FormStatus -> Maybe a -> FormHSXT x v (Maybe a)
+formletOfMaybe e mx = formlet e (S.fromList (maybeToList mx)) `check` (Success . listToMaybe . S.elems)
+
 -- |Generate radio buttons selecting the different constructors of an
 -- algebraic type, but ignoring any fields that might be associated
 -- with the different constructors.
 radioButtons :: forall a. forall x. forall v. (Read a, Show a, Default a, Ord a, Data FormletOfD a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                         (a -> String) -> ([(a, String)] -> Maybe a -> FormHSXT x v a) -> Maybe a -> FormHSXT x v a
+                         (a -> String) -> ([(a, String)] -> Maybe a -> FormHSXT x v (Maybe a)) -> Maybe a -> FormHSXT x v (Maybe a)
 radioButtons labelFn selectFn x =
     selectFn pairs x
     where
@@ -188,14 +211,6 @@ formletOfSet e xs =
           cs = S.map (toConstr formletOfProxy) xs
           constrs = dataTypeConstrs (dataTypeOf formletOfProxy (undefined :: a))
 
--- |The treatment of the type (Maybe a) depends on a.  If a is a union
--- it adds the "None Chosen" choice to the selections.  If it is a set
--- it is ignored (or treated as an error?)  Otherwise it is treated as
--- a set with either one element or none.
-formletOfMaybe :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
-                  FormStatus -> Maybe a -> FormHSXT x v (Maybe a)
-formletOfMaybe e mx = formlet e (S.fromList (maybeToList mx)) `check` (Success . listToMaybe . S.elems)
-
 -- |Display the elements of a list with an extra defaultValue added.
 -- This extra value is removed if it is still equal to defaultValue.
 formletOfList :: forall a. forall x. forall v. (FormletOf a, HSX.XMLGenerator x, Monad v, Applicative v) =>
@@ -213,7 +228,10 @@ formletOfList e xs =
 -- |Convert a generic value into a formlet.  This code only handles
 -- the case of a union type whose constructors all have arity zero.
 -- Other cases must be handled in specialized instances.
-instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where formletOf e union x = formletOfAny e union x
+instance (Read a, Show a, Default a, Ord a, Data FormletOfD a) => FormletOf a where
+    formletOf e union x = formletOfAny e union x
+
+-- |A specialized instance for converting sets to formlets.
 instance FormletOf a => FormletOf (S.Set a) where formletOf e _ xs = formletOfSet e xs
 instance FormletOf a => FormletOf (Maybe a) where formletOf e _ mx = formletOfMaybe e mx
 instance FormletOf a => FormletOf [a] where formletOf e _ xs = formletOfList e xs
