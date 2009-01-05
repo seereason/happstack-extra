@@ -1,3 +1,9 @@
+haskell-happs-extra (0.26) unstable; urgency=low
+
+  * Move generic formlet stuff to its own package.
+
+ -- David Fox <dsf@seereason.com>  Mon, 05 Jan 2009 13:35:12 -0800
+
 haskell-happs-extra (0.25) unstable; urgency=low
 
   * API change: defaultResult argument added to Text.Formlets.input', input'' removed
