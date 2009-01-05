@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, RankNTypes, PatternGuards, PatternSignatures #-}
-{-# OPTIONS_GHC -F -pgmFtrhsx -Wwarn -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -F -pgmFtrhsx -Wall -Wwarn -fno-warn-name-shadowing #-}
 module HSP.Formlets.Transform (redesign) where
 
 import Control.Monad.Identity
@@ -111,37 +111,6 @@ redesign _ cd@(CDATA f v) = genElement (Nothing, "span") [] [asChild cd]
 -- error $ "Found CDATA " ++ show f ++ " " ++ show v
 
 fieldName = (\ (c : cs) -> toUpper c : cs) . camelToText
-
-xlate :: String -> String -> Maybe String
-xlate constr name = lookup (constr, name) xlations
-
-
-xlations :: [((String, String),String)]
-xlations = [(("ProviderInfo","nameAndAddress"), "Please provide the following company information")
-           ,(("ProviderInfo","listingType"), "Type Of Directory Listing" )
-           ,(("ProviderInfo","companyType"), "Company Structure" )
-           ,(("ProviderInfo","serviceTypes"), "TYPE OF COMPANY (check all that apply)" )
-           ,(("ProviderInfo","schedulingRequirements"), "SCHEDULING" )
-           ,(("ProviderInfo","fees"), "FEES" )
-           ,(("ProviderInfo","timeInBusiness"), "Length of Time In Business" )
-           ,(("ProviderInfo","phoneAccessability"), "How accessable are you by telephone should your client have an immediate need or question" )
-           ,(("ProviderInfo","languages"), "Are you (if individual) or staff multi-lingual" )
-           ,(("ProviderInfo","caseCount"), "COMPANY CAPACITY: how many clients can you service at one time?" )
-           ,(("ProviderInfo","paymentMethods"), "Payment Methods" )
-           ,(("ProviderInfo","ageGroupsServed"), "Frequency of Treating/Serving Different Age Groups" )
-           ,(("ProviderInfo","countiesServed"), "Counties Served" )
-           ,(("HomeHealthInfo","medicalServices"), "Please check each medical service that you provide" )
-           ,(("HomeHealthInfo","otherServices"), "Please check all the 'other' services you provide" )
-           ,(("HomeHealthInfo","caretakerQualifications"), "Employee qualifications.  Check all that apply." )
-           ,(("HomeHealthInfo","caretakerGender"), "Gender of Caretakers" )
-           ,(("HomeHealthInfo","accreditations"), "Is Your Agency/Company Accredited by: (Please Check All That Apply)" )
-           ,(("IndependentServiceProvider","independentServiceProviderInfo"), "For Independent Service Providers:" )
-           ,(("LicensedHomeHealthCareAgency","homeHealthInfo"), "For Licensed Home Health Care Agencies" )
-           ,(("IndependentServiceProviderInfo","ispServices"), "Services")
-           ,(("IndependentServiceProviderInfo","ispServiceLocations"), "Locations")
-           ,(("IndependentServiceProviderInfo","ispSchedulingRequirements"), "Scheduling Requirements")
-           ,(("IndependentServiceProviderInfo","ispFeeMethod"), "Fee Method")
-           ]
 
 -- Each checkbox enables or disables the inputs of the associated form.
 enableDisableCheckboxes choices forms =
