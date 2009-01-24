@@ -3,8 +3,7 @@ Priority: optional
 Section: misc
 Maintainer: Jeremy Shaw <jeremy@n-heptane.com>
 Build-Depends: debhelper (>= 5.0),
-               haskell-devscripts,
-               cabal-debian (>= 0.7),
+               haskell-cdbs,
                ghc6 (>= 6.8),
                ghc6-doc,
                haddock (>= 2.1.0),
