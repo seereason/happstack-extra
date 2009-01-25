@@ -14,7 +14,7 @@ Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.Identi
 		  HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Account.Server, HAppS.Server.SimpleHTTP.Extra,
 		  HAppS.Server.Extra, HAppS.Server.HSP.HTML, HAppS.Server.CookieFixer, HAppS.Server.Main
                   
-Build-Depends:    base < 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4, HAppS-Server >= 0.9.2.2, HAppS-Data, HAppS-IxSet, HAppS-Util, HAppS-State, RJson, Extra >= 1.27
+Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat, syb, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4, HAppS-Server >= 0.9.2.2, HAppS-Data, HAppS-IxSet, HAppS-Util, HAppS-State, RJson, Extra >= 1.27
 Build-Type:       Simple
 Category:         Web, Language
 
