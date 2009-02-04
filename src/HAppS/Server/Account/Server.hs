@@ -34,7 +34,6 @@ llogin makeSess u p =
          Just account {- (Account _userId _ _ (AccountData greet)) -} ->
               do sId <- newSession (makeSess u (userId account) (acctData account))
                  addCookie (-1) (mkCookie "sessionId" (show sId))
-                 addCookie (-1) (mkCookie "foo" "bar")
                  return (a, Just sId)
          Nothing -> return (Nothing, Nothing)
 
