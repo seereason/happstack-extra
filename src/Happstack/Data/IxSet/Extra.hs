@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
-module HAppS.Data.IxSet.Extra 
+module Happstack.Data.IxSet.Extra 
     (testAndInsert
     )
         where
 
 import Control.Monad.State
 import Data.Generics
-import HAppS.Data
-import HAppS.Data.IxSet
+import Happstack.Data
+import Happstack.Data.IxSet
 
 -- |perform insert only if test is True
 testAndInsert :: (Indexable a b,

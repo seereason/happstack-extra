@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell,DeriveDataTypeable,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  HAppS.Data.User.Password
+-- Module      :  Happstack.Data.User.Password
 -- Copyright   :  (c) 2008 Jeremy Shaw <jeremy@n-heptane.com>
 -- License     :  BSD3-style
 -- 
@@ -11,11 +11,11 @@
 --
 -- Data types and functions for handling salted passwords.
 -----------------------------------------------------------------------------
-module HAppS.Data.User.Password where
+module Happstack.Data.User.Password where
 
 import Control.Monad
-import HAppS.Crypto.SHA1
-import HAppS.Data
+import Happstack.Crypto.SHA1
+import Happstack.Data
 import System.Random
 
 $( deriveAll [''Ord,''Eq,''Read,''Show,''Default] 

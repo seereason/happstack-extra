@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, UndecidableInstances, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving #-}
 -- |Simple account support. See http://src.seereason.com/examples/happs-logon-example/
-module HAppS.Server.Account 
+module Happstack.Server.Account 
     ( AccountData
     , Account(..)
     , Accounts(..)
@@ -16,11 +16,11 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Maybe
 import Data.Generics
-import HAppS.Data
-import HAppS.Data.IxSet
-import HAppS.Data.IxSet.Extra
-import HAppS.Data.User.Password
-import HAppS.State
+import Happstack.Data
+import Happstack.Data.IxSet
+import Happstack.Data.IxSet.Extra
+import Happstack.Data.User.Password
+import Happstack.State
 import Text.RJson
 
 class (Ord a, Serialize a, Data a, Default a) => AccountData a

@@ -1,8 +1,8 @@
-module HAppS.State.Extra where
+module Happstack.State.Extra where
 
 import Control.Exception
 import Control.Monad.Trans(MonadIO(liftIO))
-import HAppS.State
+import Happstack.State
 
 -- |execute 'action' with the state transaction system running
 -- useful for testing state related code interactively in GHCi

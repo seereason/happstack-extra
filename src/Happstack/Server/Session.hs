@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, UndecidableInstances, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving #-}
 -- |Simple session support. See http://src.seereason.com/examples/happs-logon-example/
-module HAppS.Server.Session 
+module Happstack.Server.Session 
     ( -- * Basic Types
       SessionData
     , SessionId(..)
@@ -26,12 +26,12 @@ import Control.Monad.State hiding (State)
 import Control.Monad.Reader (liftIO, ask)
 import Data.Generics (Data)
 import Data.Maybe (fromJust, isNothing)
-import HAppS.Data
-import HAppS.Data.IxSet
-import HAppS.Data.IxSet.Extra
-import HAppS.State
-import HAppS.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
-import HAppS.Server.Extra ()
+import Happstack.Data
+import Happstack.Data.IxSet
+import Happstack.Data.IxSet.Extra
+import Happstack.State
+import Happstack.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
+import Happstack.Server.Extra ()
 import System.Random
 
 class (Ord s, Serialize s, Data s, Default s) => SessionData s

@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
-module HAppS.Server.SimpleHTTP.Extra where
+module Happstack.Server.SimpleHTTP.Extra where
 
 import Control.Applicative
 import Control.Monad.Identity
 --import Data.ByteString.Lazy.UTF8 as L
 import qualified Data.ByteString.Char8 as P
-import HAppS.Server hiding (Web)
-import HAppS.Server.HSP.HTML ()
+import Happstack.Server hiding (Web)
+import Happstack.Server.HSP.HTML ()
 import HSP (XMLGenT, XML {-, XMLMetaData(..)-})
 import HSP.HTML
 import HSP.Identity

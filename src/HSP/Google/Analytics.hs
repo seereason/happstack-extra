@@ -7,7 +7,7 @@ module HSP.Google.Analytics
 
 import Data.Generics
 import HSP
--- import HAppS.Template.HSP
+-- import Happstack.Template.HSP
 
 newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google
     deriving (Read, Show, Eq, Ord, Typeable, Data)
@@ -50,7 +50,7 @@ addAnalytics uacct pg =
              </html>
          o -> error ("Failed to add analytics." ++ show o)
 
--- import HAppS.Template.HSP
+-- import Happstack.Template.HSP
 
 {- Example Analytics Code from Google:
 <script type="text/javascript">

@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
-module HAppS.Server.HSP.HTML where
+module Happstack.Server.HSP.HTML where
 
 import qualified Data.ByteString.Char8 as P
 import qualified Data.ByteString.Lazy.UTF8 as L
-import HAppS.Server(ToMessage(toMessage, toContentType))
+import Happstack.Server(ToMessage(toMessage, toContentType))
 import HSP.XML (XML(..), XMLMetaData(..))
 import HSP.HTML (html4Strict, renderAsHTML)
 

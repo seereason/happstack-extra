@@ -1,4 +1,4 @@
-module HAppS.Server.Extra 
+module Happstack.Server.Extra 
     ( debug404
     , prettyRequest
     , prettyList
@@ -21,9 +21,9 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import HAppS.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), getHeader, multi, noopValidator
+import Happstack.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), getHeader, multi, noopValidator
                    , notFound, setValidator, toResponse, withRequest, rqURL)
-import HAppS.Server.HTTP.Types (Input(inputValue))
+import Happstack.Server.HTTP.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
 import Text.Regex (mkRegexWithOpts, matchRegexAll)
@@ -65,7 +65,7 @@ prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
 withURI :: (URI -> WebT m a) -> ServerPartT m a
 withURI f =
     withRequest (f . fromJust . parseRelativeReference . rqURL)
-    -- The definition of rqURL in HAppS doesn't do what I would
+    -- The definition of rqURL in Happstack doesn't do what I would
     -- expect.  In fact, I don't really understand what it does.
     where rqURL rq = rqUri rq ++ rqQuery rq
 
@@ -83,7 +83,7 @@ withURISP f =
             uri = (URI "http:" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
         in (unServerPartT (multi (f uri))) request
 
--- |A version of HAppS lookPairs that doesn't unpack its values.
+-- |A version of Happstack lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
 lookPairsPacked = asks fst >>= return . map (\ (n,vbs) -> (n, inputValue vbs))
 

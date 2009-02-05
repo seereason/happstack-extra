@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fwarn-missing-signatures #-}
-module HAppS.Server.Account.Server
+module Happstack.Server.Account.Server
     ( signInDirName
     , signOutDirName
     , signUpDirName
@@ -13,16 +13,16 @@ import Control.Monad.Trans (lift, MonadIO(liftIO))
 import Extra.URI (URI(..), parseRelativeReference, relURI, setURIQueryAttr)
 import HSP.XML (XML)
 import HSP (HSP, evalHSP)
-import HAppS.Data (Default(..))
-import HAppS.Data.User.Password (newPassword)
-import HAppS.Server (Method(GET, POST), WebT(..), ServerPartT(..), Response,
+import Happstack.Data (Default(..))
+import Happstack.Data.User.Password (newPassword)
+import Happstack.Server (Method(GET, POST), WebT(..), ServerPartT(..), Response,
                      dir, webQuery, method, ok, toResponse, withDataFn,
                      webUpdate, seeOther, look, anyRequest,
                      mkCookie, addCookie, readCookieValue, methodSP)
-import HAppS.Server.Account(AccountData, Create(..), Account(..), UserId(..), Username(..), Authenticate(..))
-import HAppS.Server.Extra (lookPairsUnicode, withURI, withURISP)
-import HAppS.Server.HSP.HTML()
-import HAppS.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), newSession)
+import Happstack.Server.Account(AccountData, Create(..), Account(..), UserId(..), Username(..), Authenticate(..))
+import Happstack.Server.Extra (lookPairsUnicode, withURI, withURISP)
+import Happstack.Server.HSP.HTML()
+import Happstack.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), newSession)
 
 -- |Try to authenticate a user and password, and on success (creation
 -- of the new session) return the account data and session ID.

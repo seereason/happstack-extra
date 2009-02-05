@@ -4,15 +4,15 @@ License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
 
-Synopsis:         Components built on top of HAppS+HSP
-Description:      A collection of components built on top of HAppS+HSP, including
+Synopsis:         Components built on top of Happstack+HSP
+Description:      A collection of components built on top of Happstack+HSP, including
                   Google Analytics, a Calendar widget, and more.
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT,
-		  HAppS.Extra, HAppS.Data.IxSet.Extra, HAppS.Data.User.Password, HAppS.Server.Session, 
-		  HAppS.State.Extra, HAppS.Server.Account, HAppS.Server.Account.Server, HAppS.Server.SimpleHTTP.Extra,
-		  HAppS.Server.Extra, HAppS.Server.HSP.HTML, HAppS.Server.CookieFixer, HAppS.Server.Main
+		  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
+		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server, Happstack.Server.SimpleHTTP.Extra,
+		  Happstack.Server.Extra, Happstack.Server.HSP.HTML, Happstack.Server.CookieFixer, Happstack.Server.Main
                   
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat, syb, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4, happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, RJson, Extra >= 1.27
 

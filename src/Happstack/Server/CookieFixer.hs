@@ -1,9 +1,9 @@
-module HAppS.Server.CookieFixer 
+module Happstack.Server.CookieFixer 
     ( cookieFixer
     ) where
 
-import HAppS.Server.Cookie (Cookie(..))
-import HAppS.Server(ServerPartT(..),Request(..), getHeader)
+import Happstack.Server.Cookie (Cookie(..))
+import Happstack.Server(ServerPartT(..),Request(..), getHeader)
 
 import qualified Data.ByteString.Char8 as C
 import Data.Char (chr, toLower)

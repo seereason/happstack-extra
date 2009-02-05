@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -Wwarn -fwarn-missing-signatures -fwarn-unused-imports -fwarn-unused-binds #-}
-module HAppS.Server.Main
+module Happstack.Server.Main
     ( main
     ) where
 
 import Control.Concurrent (MVar, forkIO, killThread)
 import Control.Monad (liftM)
-import HAppS.Server (Conf(..), nullConf, simpleHTTP, wdgHTMLValidator, multi, waitForTermination, ToMessage, ServerPartT)
-import HAppS.Server.CookieFixer(cookieFixer)
-import HAppS.State (Proxy(..), Saver(Queue, FileSaver), createCheckpoint, runTxSystem, shutdownSystem, Methods, Component, TxControl)
+import Happstack.Server (Conf(..), nullConf, simpleHTTP, wdgHTMLValidator, multi, waitForTermination, ToMessage, ServerPartT)
+import Happstack.Server.CookieFixer(cookieFixer)
+import Happstack.State (Proxy(..), Saver(Queue, FileSaver), createCheckpoint, runTxSystem, shutdownSystem, Methods, Component, TxControl)
 import System.Environment (getArgs)
 import System.Console.GetOpt (OptDescr(..), ArgDescr(..), ArgOrder(..), getOpt)
 
