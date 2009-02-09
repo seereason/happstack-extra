@@ -7,6 +7,7 @@ import Control.Concurrent (MVar, forkIO, killThread)
 import Control.Monad (liftM)
 import Happstack.Server (Conf(..), nullConf, simpleHTTP, wdgHTMLValidator, multi, waitForTermination, ToMessage, ServerPartT)
 import Happstack.Server.CookieFixer(cookieFixer)
+import Happstack.Server.Cron(cron)
 import Happstack.State (Proxy(..), Saver(Queue, FileSaver), createCheckpoint, runTxSystem, shutdownSystem, Methods, Component, TxControl)
 import System.Environment (getArgs)
 import System.Console.GetOpt (OptDescr(..), ArgDescr(..), ArgOrder(..), getOpt)
@@ -20,9 +21,11 @@ main name entryPoint impl = do
             Right c -> c
   control <- startSystemState' (store conf') entryPoint
   tid <- forkIO $ simpleHTTP (conf conf') [cookieFixer . multi . impl $ static conf']
+  cronId <- forkIO $ cron (60*60*24) (createCheckpoint control)
   putStrLn ("running on port " ++ show (port (conf conf')) ++ "...")
   waitForTermination
   killThread tid
+  killThread cronId
   createCheckpoint control
   shutdownSystem control
 

@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.28) unstable; urgency=low
+
+  * Added cron task checkpoint once a day to Happstack.Server.Main.main
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Mon, 09 Feb 2009 15:58:25 -0600
+
 haskell-happstack-extra (0.27) unstable; urgency=low
 
   * ported to happstack 0.1
