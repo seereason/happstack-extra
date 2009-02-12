@@ -4,7 +4,7 @@ import HSP
 
 showHTML :: HSP XML -> IO String
 showHTML page = 
-    do (xmd, xml) <- evalHSP page Nothing
+    do (xmd, xml) <- evalHSP Nothing page
        case xmd of
          Nothing -> 
              return $ renderAsHTML xml

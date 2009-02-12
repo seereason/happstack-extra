@@ -134,9 +134,9 @@ haveSession logInPage dest sID =
                       case mSessData of
                         Just (Session _ sessionData) -> sessionData
                         Nothing -> defaultValue -- expired session might be better
-              ok . toResponse =<< lift (evalHSP (logInPage dest sessData) Nothing)
+              ok . toResponse =<< lift (evalHSP Nothing (logInPage dest sessData))
 
 noSession :: (SessionData sess) =>
              (URI -> sess -> HSP XML) -> URI -> ServerPartT IO Response
 noSession logInPage dest =
-    method GET $ ok . toResponse =<< lift (evalHSP (logInPage dest defaultValue) Nothing)
+    method GET $ ok . toResponse =<< lift (evalHSP Nothing (logInPage dest defaultValue))
