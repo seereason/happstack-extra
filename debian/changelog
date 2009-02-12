@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.29) unstable; urgency=low
+
+  * updated to use new argument ordering of evalHSP
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Thu, 12 Feb 2009 09:52:39 -0600
+
 haskell-happstack-extra (0.28) unstable; urgency=low
 
   * Added cron task checkpoint once a day to Happstack.Server.Main.main
