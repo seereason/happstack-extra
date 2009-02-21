@@ -30,7 +30,7 @@ import Happstack.Data
 import Happstack.Data.IxSet
 import Happstack.Data.IxSet.Extra
 import Happstack.State
-import Happstack.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, webQuery, readCookieValue, noHandle, multi)
+import Happstack.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, readCookieValue)
 import Happstack.Server.Extra ()
 import System.Random
 
@@ -98,13 +98,13 @@ newSession sessData =
 
 
 withSessionId :: (Monad m) => (SessionId -> [ServerPartT m r]) -> ServerPartT m r
-withSessionId = withDataFn (readCookieValue "sessionId")
+withSessionId f = withDataFn (readCookieValue "sessionId") $ \sid -> msum (f sid)
 
 withSessionData :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a -> WebT m r) -> WebT m r
 withSessionData sID f =
-    do mSessionData <- webQuery (GetSession sID)
+    do mSessionData <- query (GetSession sID)
        case mSessionData of
-         Nothing -> noHandle
+         Nothing -> mzero
          (Just (Session _ sessionData)) ->
              f sessionData
 
@@ -112,32 +112,32 @@ withSessionDataSP' :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (a
 withSessionDataSP' sID f =
        do mSessionData <- liftIO (query (GetSession sID))
           case mSessionData of
-            Nothing -> anyRequest noHandle
+            Nothing -> anyRequest mzero
             (Just (Session _ sessionData)) ->
-               multi (f sessionData)
+               msum (f sessionData)
 
 withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => (a -> [ServerPartT m r]) -> ServerPartT m r
 withSessionDataSP f = withSessionId (\sID -> [withSessionDataSP' sID f])
 
 withMSessionId :: (Monad m) => (Maybe SessionId -> [ServerPartT m r]) -> ServerPartT m r
-withMSessionId = withDataFn (optional (readCookieValue "sessionId"))
+withMSessionId f = withDataFn (optional (readCookieValue "sessionId")) $ \mSid -> msum (f mSid)
 
 withMSessionData :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (Maybe a -> WebT m r) -> WebT m r
 withMSessionData sID f =
-    do mSessionData <- webQuery (GetSession sID)
+    do mSessionData <- query (GetSession sID)
        case mSessionData of
          Nothing -> f Nothing
          (Just (Session _ sessionData)) ->
              f (Just sessionData)
 
 withMSessionDataSP' :: (Ord a, Serialize a, Data a, MonadIO m) => Maybe SessionId -> (Maybe a -> [ServerPartT m r]) -> ServerPartT m r
-withMSessionDataSP' Nothing f = multi (f Nothing)
+withMSessionDataSP' Nothing f = msum (f Nothing)
 withMSessionDataSP' (Just sID) f =
     do mSessionData <- liftIO . query . GetSession $ sID
        case mSessionData of
-         Nothing -> multi (f Nothing)
+         Nothing -> msum (f Nothing)
          (Just (Session _ sessionData)) ->
-             multi (f (Just sessionData))
+             msum (f (Just sessionData))
 
 withMSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m) => (Maybe a -> [ServerPartT m r]) -> ServerPartT m r
 withMSessionDataSP f =

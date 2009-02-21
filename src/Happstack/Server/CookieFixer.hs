@@ -3,7 +3,7 @@ module Happstack.Server.CookieFixer
     ) where
 
 import Happstack.Server.Cookie (Cookie(..))
-import Happstack.Server(ServerPartT(..),Request(..), getHeader)
+import Happstack.Server(ServerPartT(..),Request(..), getHeader, localRq)
 
 import qualified Data.ByteString.Char8 as C
 import Data.Char (chr, toLower)
@@ -63,8 +63,8 @@ cookieFixer :: Request -> Request
 cookieFixer request = [ (cookieName c, c) | cl <- fromMaybe [] (fmap getCookies (getHeader "Cookie" (rqHeaders request))), c <- cl ]
 -}
 
-cookieFixer :: ServerPartT m a -> ServerPartT m a
-cookieFixer (ServerPartT sp) = ServerPartT $ \request -> sp (request { rqCookies = (fixedCookies request) } )
+cookieFixer :: (Monad m) => ServerPartT m a -> ServerPartT m a
+cookieFixer = localRq (\request -> request { rqCookies = (fixedCookies request) })
     where
       fixedCookies request = [ (cookieName c, c) | cl <- fromMaybe [] (fmap getCookies (getHeader "Cookie" (rqHeaders request))), c <- cl ]
 

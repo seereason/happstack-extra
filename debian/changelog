@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.30) unstable; urgency=low
+
+  * Updated to happstack 0.1.9 HEAD
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 21 Feb 2009 10:29:33 -0600
+
 haskell-happstack-extra (0.29) unstable; urgency=low
 
   * updated to use new argument ordering of evalHSP

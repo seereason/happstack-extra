@@ -14,6 +14,7 @@ module Happstack.Server.Extra
 
 import Control.Applicative
 import Control.Arrow ((***))
+import Control.Monad(msum)
 import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -22,7 +23,7 @@ import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Happstack.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), getHeader, multi, noopValidator
-                   , notFound, setValidator, toResponse, withRequest, rqURL)
+                   , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq)
 import Happstack.Server.HTTP.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
@@ -71,8 +72,7 @@ withURI f =
 
 -- |Retrieve and parse the request URL and pass it to f.
 withURISP :: (Monad m) => (URI -> [ServerPartT m a]) -> ServerPartT m a
-withURISP f =
-    ServerPartT $ \request ->
+withURISP f = askRq >>= \request -> 
         let mHost = B.unpack <$> getHeader "host" request
             mAuthority =
                 case mHost of
@@ -81,7 +81,7 @@ withURISP f =
                       case span (/= ':') str of
                         (host, port) -> Just (URIAuth "" host port)
             uri = (URI "http:" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
-        in (unServerPartT (multi (f uri))) request
+        in msum (f uri)
 
 -- |A version of Happstack lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
