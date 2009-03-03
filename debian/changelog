@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.31) unstable; urgency=low
+
+  * Removed Happstack.Server.HSP.HTML module, since jeremy moved it
+    upstream to happstack.
+
+ -- Clifford Beshers <beshers@seereason.com>  Mon, 02 Mar 2009 17:35:09 -0800
+
 haskell-happstack-extra (0.30) unstable; urgency=low
 
   * Updated to happstack 0.1.9 HEAD

@@ -12,7 +12,7 @@ Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT,
 		  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
 		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server, Happstack.Server.SimpleHTTP.Extra,
-		  Happstack.Server.Extra, Happstack.Server.HSP.HTML, Happstack.Server.CookieFixer, Happstack.Server.Main
+		  Happstack.Server.Extra, Happstack.Server.CookieFixer, Happstack.Server.Main
                   
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat, syb, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4, happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, RJson, Extra >= 1.27
 
