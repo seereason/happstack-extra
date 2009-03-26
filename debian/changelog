@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.32) unstable; urgency=low
+
+  * Add Happstack.Server.Formlets, to embed formlets in Happstack.
+
+ -- David Fox <dsf@seereason.com>  Thu, 26 Mar 2009 10:32:31 -0700
+
 haskell-happstack-extra (0.31) unstable; urgency=low
 
   * Removed Happstack.Server.HSP.HTML module, since jeremy moved it
