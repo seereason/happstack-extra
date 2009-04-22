@@ -11,7 +11,7 @@ import Control.Monad(msum)
 import Control.Monad.State ()
 import Control.Monad.Trans (lift, MonadIO(liftIO))
 --import Data.Generics (Data(..))
-import Extra.URI (URI(..), parseRelativeReference, relURI, setURIQueryAttr)
+import Extra.URI (URI(..), parseURI, parseRelativeReference, relURI, setURIQueryAttr, unEscapeString)
 import HSP.XML (XML)
 import HSP (HSP, evalHSP)
 import Happstack.Data (Default(..))
@@ -50,9 +50,11 @@ account logInPage makeSess delSess path =
     [withDataFn lookPairsUnicode $ \ pairs ->
       -- We expect to see dest=<encoded uri> in the query, that is the
       -- page we go to once we log in successfully.
-      let dest = maybe (relURI path []) id (maybe Nothing parseRelativeReference (lookup "dest" pairs)) in
+     let destString = fmap unEscapeString (lookup "dest" pairs)
+         destURI = maybe Nothing (\ s -> maybe (parseURI s) Just (parseRelativeReference s)) destString
+         dest = maybe (relURI path []) id destURI in
       msum
-      [ handleSignUp makeSess (defaultValue :: acct)
+      [ handleSignUp makeSess (defaultValue :: acct) dest
       , handleSignIn makeSess
       , withDataFn (readCookieValue "sessionId") $ \ sID -> msum
         [ handleSignOut delSess path sID
@@ -69,16 +71,15 @@ signUpDirName = "signUp"
 -- |A server part that handles the /account/signUp form action and
 -- tries to create a new account.
 handleSignUp :: (MonadIO m, AccountData a, SessionData s) =>
-                (String -> UserId -> a -> s) -> a -> ServerPartT m Response
-handleSignUp makeSess defAcct =
+                (String -> UserId -> a -> s) -> a -> URI -> ServerPartT m Response
+handleSignUp makeSess defAcct dest =
     dir signUpDirName $
       methodSP POST $
         (withDataFn (do u  <- look "newusername"
                         p1 <- look "newpassword1"
                         p2 <- look "newpassword2"
-                        dest <- look "dest"
-                        return (u, p1, p2, parseRelativeReference dest)
-                    ) $ \(u, p1, p2, dest) ->
+                        return (u, p1, p2)
+                    ) $ \(u, p1, p2) ->
         withURI $ \ here ->
            (if p1 /= p2
             then ok (toResponse "Passwords do not match.  Press the 'back' button and try again.")
@@ -86,11 +87,11 @@ handleSignUp makeSess defAcct =
                     -- FIXME: This should have more error conditions
                     r <- update $ Create (Username u) pw defAcct
                     case r of
-                      Left error -> ok (toResponse error) -- seeOther here (toResponse error)
+                      Left error -> seeOther (setURIQueryAttr "dest" (show dest) (setURIQueryAttr "alert" error here)) (toResponse error)
                       Right _userId -> do (a,_sid) <- llogin makeSess u p1
                                           case a of
                                             Nothing -> ok (toResponse "Authentication failed.")
-                                            _ -> seeOther (maybe here id dest) (toResponse ()))
+                                            _ -> seeOther dest (toResponse ()))
         )
 
 signInDirName = "signIn"
