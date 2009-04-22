@@ -1,3 +1,4 @@
+-- |used to fix broken cookie parsing is older versions of happstack. Not need in happstack >= 0.2.
 module Happstack.Server.CookieFixer 
     ( cookieFixer
     ) where

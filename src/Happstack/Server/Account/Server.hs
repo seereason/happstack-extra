@@ -17,13 +17,13 @@ import HSP (HSP, evalHSP)
 import Happstack.Data (Default(..))
 import Happstack.Data.User.Password (newPassword)
 import Happstack.Server (Method(GET, POST), WebT(..), ServerPartT(..), Response,
-                     dir, method, ok, toResponse, withDataFn,
+                     dir, methodM, ok, toResponse, withDataFn,
                      seeOther, look, anyRequest,
                      mkCookie, addCookie, readCookieValue, methodSP)
 import Happstack.Server.Account(AccountData, Create(..), Account(..), UserId(..), Username(..), Authenticate(..))
 import Happstack.Server.Extra (lookPairsUnicode, withURI, withURISP)
 import Happstack.Server.HSP.HTML()
-import Happstack.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), newSession)
+import Happstack.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), NewSession(..))
 import Happstack.State (query, update)
 
 -- |Try to authenticate a user and password, and on success (creation
@@ -34,7 +34,7 @@ llogin makeSess u p =
     do a <- query (Authenticate u p)
        case a of
          Just account {- (Account _userId _ _ (AccountData greet)) -} ->
-              do sId <- newSession (makeSess u (userId account) (acctData account))
+              do sId <- update $ NewSession (makeSess u (userId account) (acctData account))
                  addCookie (-1) (mkCookie "sessionId" (show sId))
                  return (a, Just sId)
          Nothing -> return (Nothing, Nothing)
@@ -45,8 +45,8 @@ account :: forall acct. forall sess.
         -> (String -> UserId -> acct -> sess)           -- ^ Create a session
         -> (SessionId -> DelSession sess)               -- ^ Delete a session
         -> String                                       -- ^ The path to the parent serverpart, e.g. "/account"
-        -> [ServerPartT IO Response]
-account logInPage makeSess delSess path =
+        -> ServerPartT IO Response
+account logInPage makeSess delSess path = msum
     [withDataFn lookPairsUnicode $ \ pairs ->
       -- We expect to see dest=<encoded uri> in the query, that is the
       -- page we go to once we log in successfully.
@@ -67,6 +67,7 @@ account logInPage makeSess delSess path =
       ]
     ]
 
+signUpDirName :: String
 signUpDirName = "signUp"
 
 -- |A server part that handles the /account/signUp form action and
@@ -95,6 +96,7 @@ handleSignUp makeSess defAcct dest alert =
                                             _ -> seeOther dest (toResponse ()))
         )
 
+signInDirName :: String
 signInDirName = "signIn"
 
 handleSignIn :: (MonadIO m, AccountData a, SessionData s) =>
@@ -114,6 +116,7 @@ handleSignIn makeSess dest =
                  _ -> seeOther dest (toResponse ())
         ]
 
+signOutDirName :: String
 signOutDirName = "signOut"
 
 handleSignOut :: (MonadIO m, SessionData sess) =>
@@ -127,15 +130,15 @@ handleSignOut delSess dest sID =
 haveSession :: (SessionData sess) =>
                (URI -> sess -> HSP XML) -> URI -> SessionId -> ServerPartT IO Response
 haveSession logInPage dest sID =
-    method GET $
+    methodM GET >> (anyRequest $
            do mSessData <- query (GetSession sID)
               let sessData =
                       case mSessData of
                         Just (Session _ sessionData) -> sessionData
                         Nothing -> defaultValue -- expired session might be better
-              ok . toResponse =<< lift (evalHSP Nothing (logInPage dest sessData))
+              ok . toResponse =<< lift (evalHSP Nothing (logInPage dest sessData)))
 
 noSession :: (SessionData sess) =>
              (URI -> sess -> HSP XML) -> URI -> ServerPartT IO Response
 noSession logInPage dest =
-    method GET $ ok . toResponse =<< lift (evalHSP Nothing (logInPage dest defaultValue))
+    methodM GET >> (anyRequest $ ok . toResponse =<< lift (evalHSP Nothing (logInPage dest defaultValue)))

@@ -6,6 +6,7 @@ module HSP.Identity
     ) where
 
 import HSP
+import Control.Applicative
 import Control.Monad.Identity
 import qualified HSX.XMLGenerator as HSX
 
@@ -77,3 +78,8 @@ evalIdentity :: XMLGenT Identity XML -> XML
 evalIdentity = runIdentity . HSX.unXMLGenT
 
 type Ident = XMLGenT Identity
+
+-- send upstream to applicative-extra
+instance Applicative Identity where
+    pure = return
+    (<*>) = ap

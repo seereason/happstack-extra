@@ -9,10 +9,11 @@ Description:      A collection of components built on top of Happstack+HSP, incl
                   Google Analytics, a Calendar widget, and more.
 
 Hs-Source-Dirs:   src
-Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT,
+Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.WebT, HSP.ServerPartT
 		  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
-		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server, Happstack.Server.SimpleHTTP.Extra,
-		  Happstack.Server.Extra, Happstack.Server.CookieFixer, Happstack.Server.Main, Happstack.Server.Formlets
+		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server, Happstack.Server.Account.Server2,
+                  Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.CookieFixer, Happstack.Server.Main, 
+                  Happstack.Server.Formlets
                   
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat,
 		  syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4,

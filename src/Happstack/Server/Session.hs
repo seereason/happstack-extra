@@ -10,7 +10,7 @@ module Happstack.Server.Session
     , GetSession(..)
     , UpdateSession(..)
     , DelSession(..)
-    , newSession
+    , NewSession(..)
     , withSessionId
     , withSessionData
     , withSessionDataSP
@@ -20,7 +20,7 @@ module Happstack.Server.Session
     )
     where
 
-import Control.Applicative (optional)
+import Control.Applicative ((<$>),optional)
 import Control.Monad.Error (MonadIO)
 import Control.Monad.State hiding (State)
 import Control.Monad.Reader (liftIO, ask)
@@ -32,7 +32,6 @@ import Happstack.Data.IxSet.Extra
 import Happstack.State
 import Happstack.Server (ServerPartT(..), WebT(..), anyRequest, withDataFn, readCookieValue)
 import Happstack.Server.Extra ()
-import System.Random
 
 class (Ord s, Serialize s, Data s, Default s) => SessionData s
 
@@ -72,30 +71,40 @@ delSession sessionId =
              do modify (delete session)
                 return (Just session)
 
+-- |start a new session with the supplied session data
+-- returns: the SessionId
+-- FIXME: use Happstack.State.Util.getRandom instead of this retry stuff
+newSession :: (Data a, Serialize a, Ord a) => a -> Update (Sessions a) SessionId
+newSession sessData =
+    do sessId <- SessionId <$> getRandom
+       let session = (Session sessId sessData)
+       r <- testAndInsert (isNothing . getOne . (@= sessId)) session
+       if r
+          then return sessId
+          else newSession sessData
+    
+{-
+    do sessId <- liftIO $ fmap SessionId $ randomRIO (0,2^128)
+       r <- update (TryNewSession (Session sessId sessData))
+       if r
+          then return sessId
+          else newSession sessData
+-}
+
+{-
 -- |attempt to start a new Session
 tryNewSession :: (Data a, Ord a) => (Session a) -> Update (Sessions a) Bool
 tryNewSession session =
     testAndInsert (isNothing . getOne . (@= (gFind' session :: SessionId))) session
-
+-}
 -- * methods
 
 $(mkMethods ''Sessions 
   [ 'getSession
   , 'updateSession
   , 'delSession
-  , 'tryNewSession
+  , 'newSession
   ])
-
--- |start a new session with the supplied session data
--- returns: the SessionId
-newSession :: (MonadIO m, Data a, Serialize a, Ord a) => a -> m SessionId
-newSession sessData =
-    do sessId <- liftIO $ fmap SessionId $ randomRIO (0,2^128)
-       r <- update (TryNewSession (Session sessId sessData))
-       if r
-          then return sessId
-          else newSession sessData
-
 
 withSessionId :: (Monad m) => (SessionId -> [ServerPartT m r]) -> ServerPartT m r
 withSessionId f = withDataFn (readCookieValue "sessionId") $ \sid -> msum (f sid)

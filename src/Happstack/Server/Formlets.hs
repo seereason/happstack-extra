@@ -14,8 +14,7 @@ import Happstack.Server (methodSP, methodM, Method(GET, POST), ok, toResponse, w
                          WebT, Response, ServerPartT(..), anyRequest, notFound, RqData)
 import Happstack.Server.Extra (lookPairsUnicode)
 import Happstack.Server.SimpleHTTP.Extra ()
-import Happstack.State (QueryEvent)
-import Happstack.State.Extra (liftQuery)
+import Happstack.State (QueryEvent, query)
 import Data.Generics.SYB.WithClass.Instances ()
 import Extra.URI (URI)
 import Prelude hiding (div, maybe)
@@ -55,9 +54,9 @@ createForm env prefix action' faults frm formXML =
 -- so it probably belongs in Happstack-Extra.
 withDatumSP :: (Show a, QueryEvent ev (Maybe t), MonadIO m) =>
                RqData a -> (a -> ev) -> (t -> [ServerPartT m Response]) -> ServerPartT m Response
-withDatumSP look query f =
+withDatumSP look queryEv f =
     withDataFn look $ \ x ->
-        do mResult <- liftQuery (query x)
+        do mResult <- query (queryEv x)
            case mResult of
              Nothing -> anyRequest (notFound (toResponse ("Invalid argument: " ++ show x)))
              Just result -> msum (f result)
