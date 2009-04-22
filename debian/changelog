@@ -5,6 +5,7 @@ haskell-happstack-extra (0.33) unstable; urgency=low
   * Pass the alert to handleSignUp so we can display a message
     if account sign up fails.
   * Redirect to the original destination page after sign out.
+  * Redirect to the original destination page after sign in.
 
  -- David Fox <dsf@seereason.com>  Wed, 22 Apr 2009 06:43:49 -0700
 

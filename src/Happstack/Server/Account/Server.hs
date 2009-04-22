@@ -56,7 +56,7 @@ account logInPage makeSess delSess path =
          alert = lookup "alert" pairs in
       msum
       [ handleSignUp makeSess (defaultValue :: acct) dest alert
-      , handleSignIn makeSess
+      , handleSignIn makeSess dest
       , withDataFn (readCookieValue "sessionId") $ \ sID -> msum
         [ handleSignOut delSess dest sID
         -- Add pages that need a session
@@ -98,20 +98,19 @@ handleSignUp makeSess defAcct dest alert =
 signInDirName = "signIn"
 
 handleSignIn :: (MonadIO m, AccountData a, SessionData s) =>
-          (String -> UserId -> a -> s) -> ServerPartT m Response
-handleSignIn makeSess =
+          (String -> UserId -> a -> s) -> URI -> ServerPartT m Response
+handleSignIn makeSess dest =
     dir signInDirName $
       methodSP POST $
         withURISP $ \here ->
         [ withDataFn (do u <- (look "username")
                          p <- (look "password")
-                         dest <- look "dest"
-                         return (u, p, maybe here id (parseRelativeReference dest))
-                     ) $ \(u, p, dest) ->
+                         return (u, p)
+                     ) $ \(u, p) ->
           anyRequest $
             do (a,_sid) <- llogin makeSess u p
                case a of
-                 Nothing -> seeOther (setURIQueryAttr "alert" "Authentication failed." dest) (toResponse ()) -- ok (toResponse "Authentication failed.")
+                 Nothing -> seeOther (setURIQueryAttr "alert" "Authentication failed." dest) (toResponse ())
                  _ -> seeOther dest (toResponse ())
         ]
 
