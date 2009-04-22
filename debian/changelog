@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.34) unstable; urgency=low
+
+  * Added XMLGenT instance for WebT
+  * updates to account code
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 22 Apr 2009 16:10:30 -0500
+
 haskell-happstack-extra (0.33) unstable; urgency=low
 
   * Fix the code to redirect back to original destination after
