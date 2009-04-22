@@ -58,7 +58,7 @@ account logInPage makeSess delSess path =
       [ handleSignUp makeSess (defaultValue :: acct) dest alert
       , handleSignIn makeSess
       , withDataFn (readCookieValue "sessionId") $ \ sID -> msum
-        [ handleSignOut delSess path sID
+        [ handleSignOut delSess dest sID
         -- Add pages that need a session
         , haveSession logInPage dest sID ]
       -- This is where you end up if you're not logged in.
@@ -118,12 +118,12 @@ handleSignIn makeSess =
 signOutDirName = "signOut"
 
 handleSignOut :: (MonadIO m, SessionData sess) =>
-           (SessionId -> DelSession sess) -> FilePath -> SessionId -> ServerPartT m Response
-handleSignOut delSess path sID =
+           (SessionId -> DelSession sess) -> URI -> SessionId -> ServerPartT m Response
+handleSignOut delSess dest sID =
     withDataFn (readCookieValue "sessionId") $ \sID ->
       dir signOutDirName $
         anyRequest $ do update (delSess sID)
-                        seeOther (relURI path []) (toResponse ())
+                        seeOther dest (toResponse ())
 
 haveSession :: (SessionData sess) =>
                (URI -> sess -> HSP XML) -> URI -> SessionId -> ServerPartT IO Response
