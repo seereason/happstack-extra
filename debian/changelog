@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.33) unstable; urgency=low
+
+  * Fix the code to redirect back to original destination after
+    account sign up.
+  * Pass the alert to handleSignUp so we can display a message
+    if account sign up fails.
+
+ -- David Fox <dsf@seereason.com>  Wed, 22 Apr 2009 06:43:49 -0700
+
 haskell-happstack-extra (0.32) unstable; urgency=low
 
   * Add Happstack.Server.Formlets, to embed formlets in Happstack.

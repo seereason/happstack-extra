@@ -52,9 +52,10 @@ account logInPage makeSess delSess path =
       -- page we go to once we log in successfully.
      let destString = fmap unEscapeString (lookup "dest" pairs)
          destURI = maybe Nothing (\ s -> maybe (parseURI s) Just (parseRelativeReference s)) destString
-         dest = maybe (relURI path []) id destURI in
+         dest = maybe (relURI path []) id destURI
+         alert = lookup "alert" pairs in
       msum
-      [ handleSignUp makeSess (defaultValue :: acct) dest
+      [ handleSignUp makeSess (defaultValue :: acct) dest alert
       , handleSignIn makeSess
       , withDataFn (readCookieValue "sessionId") $ \ sID -> msum
         [ handleSignOut delSess path sID
@@ -71,8 +72,8 @@ signUpDirName = "signUp"
 -- |A server part that handles the /account/signUp form action and
 -- tries to create a new account.
 handleSignUp :: (MonadIO m, AccountData a, SessionData s) =>
-                (String -> UserId -> a -> s) -> a -> URI -> ServerPartT m Response
-handleSignUp makeSess defAcct dest =
+                (String -> UserId -> a -> s) -> a -> URI -> Maybe String -> ServerPartT m Response
+handleSignUp makeSess defAcct dest alert =
     dir signUpDirName $
       methodSP POST $
         (withDataFn (do u  <- look "newusername"
