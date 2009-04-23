@@ -6,7 +6,7 @@ module Happstack.Data.IxSet.Extra
 
 import Control.Monad.State
 import Data.Generics
-import Happstack.Data
+--import Happstack.Data
 import Happstack.Data.IxSet
 
 -- |perform insert only if test is True

@@ -18,7 +18,7 @@ import Happstack.State (QueryEvent, query)
 import Data.Generics.SYB.WithClass.Instances ()
 import Extra.URI (URI)
 import Prelude hiding (div, maybe)
-import Text.Formlets
+import Text.Formlets (Form, Env, runFormState)
 
 -- |handleForm - a convenience function for using Formlets in Happstack
 handleForm :: forall a. forall x. forall m. forall r. (Monad m) =>

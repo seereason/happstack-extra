@@ -18,7 +18,7 @@ import Data.Maybe
 import Data.Generics
 import Happstack.Data
 import Happstack.Data.IxSet
-import Happstack.Data.IxSet.Extra
+--import Happstack.Data.IxSet.Extra
 import Happstack.Data.User.Password
 import Happstack.State
 import Text.RJson
