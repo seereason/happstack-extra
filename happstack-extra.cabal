@@ -11,7 +11,7 @@ Description:      A collection of components built on top of Happstack+HSP, incl
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.WebT, HSP.ServerPartT
 		  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
-		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server, Happstack.Server.Account.Server2,
+		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.CookieFixer, Happstack.Server.Main, 
                   Happstack.Server.Formlets
                   
