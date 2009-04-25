@@ -66,6 +66,8 @@ Package: haskell-happstack-extra-doc
 Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
+Conflicts: libghc6-happstack-extra-doc
+Replaces: libghc6-happstack-extra-doc
 Description: Components built on top of Happstack+HSP
   A collection of components built on top of Happstack+HSP, including
   Google Analytics, a Calendar widget, and more.

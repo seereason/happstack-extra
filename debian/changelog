@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.35) unstable; urgency=low
+
+  * Conflict with and Replace old libghc6-happstack-extra-doc package.
+
+ -- David Fox <dsf@seereason.com>  Sat, 25 Apr 2009 09:08:03 -0700
+
 haskell-happstack-extra (0.34) unstable; urgency=low
 
   * Added XMLGenT instance for WebT
