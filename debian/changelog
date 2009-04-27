@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.37) unstable; urgency=low
+
+  * Add a ChangePassword method.
+
+ -- David Fox <dsf@seereason.com>  Mon, 27 Apr 2009 13:13:48 -0700
+
 haskell-happstack-extra (0.36) unstable; urgency=low
 
   * Add AcctsFromIds and AcctsFromUsers, to retrieve account data give

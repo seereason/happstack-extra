@@ -11,6 +11,7 @@ module Happstack.Server.Account
     , defaultAccounts
     , AcctsFromIds(..)
     , AcctsFromUsers(..)
+    , ChangePassword(..)
     )
     where
 
@@ -83,7 +84,7 @@ authenticate username password =
     do accts <- liftM accountIxSet ask
        case getOne (accts @= (Username username)) of
          Nothing -> return Nothing
-         (Just acct@(Account _ _ pw acctData)) -> 
+         (Just acct@(Account _ _ pw _acctData)) -> 
              if checkPassword pw password
                 then return (Just acct)
                 else return Nothing
@@ -110,11 +111,27 @@ acctsFromUsers names =
     do accts <- liftM accountIxSet ask
        return $ map acctData $ toList (accts @+ names)
 
+changePassword :: (Data a, Ord a) =>
+                  Username -> -- ^ username
+                  String -> -- ^ old password
+                  Password -> -- ^ new (salted) password
+                  a ->
+                  Update (Accounts a) (Either String ())
+changePassword username oldPass newPw _ =
+    do (Accounts nextId accountIxSet) <- get
+       case (getOne (accountIxSet @= username)) of
+         Nothing -> return (Left "No such user name")
+         Just acct@(Account u i pw d) ->
+             case checkPassword pw oldPass of
+               True -> put (Accounts nextId (updateIx u (Account u i newPw d) accountIxSet)) >> return (Right ())
+               False -> return (Left "Invalid password")
+
 $(mkMethods ''Accounts
                 [ 'authenticate
                 , 'create
                 , 'acctsFromIds
                 , 'acctsFromUsers
+                , 'changePassword
                 ])
 
 -- delete NOTE: if an account is deleted, and a new account is created
