@@ -9,6 +9,8 @@ module Happstack.Server.Account
     , Authenticate(..)
     , Create(..)
     , defaultAccounts
+    , AcctsFromIds(..)
+    , AcctsFromUsers(..)
     )
     where
 
@@ -98,9 +100,21 @@ create username password acctData =
              do put (Accounts (succ nextId) (insert (Account username nextId password acctData) accountIxSet))
                 return (Right nextId)
 
+acctsFromIds :: (Data a, Ord a) => [UserId] -> Query (Accounts a) [a]
+acctsFromIds ids =
+    do accts <- liftM accountIxSet ask
+       return $ map acctData $ toList (accts @+ ids)
+
+acctsFromUsers :: (Data a, Ord a) => [Username] -> Query (Accounts a) [a]
+acctsFromUsers names =
+    do accts <- liftM accountIxSet ask
+       return $ map acctData $ toList (accts @+ names)
+
 $(mkMethods ''Accounts
                 [ 'authenticate
                 , 'create
+                , 'acctsFromIds
+                , 'acctsFromUsers
                 ])
 
 -- delete NOTE: if an account is deleted, and a new account is created

@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.36) unstable; urgency=low
+
+  * Add AcctsFromIds and AcctsFromUsers, to retrieve account data give
+    user ids or user names.
+
+ -- David Fox <dsf@seereason.com>  Mon, 27 Apr 2009 10:39:02 -0700
+
 haskell-happstack-extra (0.35) unstable; urgency=low
 
   * Conflict with and Replace old libghc6-happstack-extra-doc package.
