@@ -77,9 +77,9 @@ defaultAccounts = Accounts { nextId = 1
 -- On failure, returns Nothing.
 -- On success, the account data for the user is returned.
 authenticate :: (Data a, Ord a) =>
-                String -- ^ username
-             -> String -- ^ plain-text password 
-             -> Query (Accounts a) (Maybe (Account a))
+                String ->
+                String ->
+                Query (Accounts a) (Maybe (Account a))
 authenticate username password =
     do accts <- liftM accountIxSet ask
        case getOne (accts @= (Username username)) of
@@ -112,9 +112,9 @@ acctsFromUsers names =
        return $ map acctData $ toList (accts @+ names)
 
 changePassword :: (Data a, Ord a) =>
-                  Username -> -- ^ username
-                  String -> -- ^ old password
-                  Password -> -- ^ new (salted) password
+                  Username ->
+                  String ->
+                  Password ->
                   a ->
                   Update (Accounts a) (Either String ())
 changePassword username oldPass newPw _ =
