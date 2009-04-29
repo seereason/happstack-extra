@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.38) unstable; urgency=low
+
+  * Add XMLGenerator instances for ServerPartT and WebT
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 29 Apr 2009 17:59:14 -0500
+
 haskell-happstack-extra (0.37) unstable; urgency=low
 
   * Add a ChangePassword method.

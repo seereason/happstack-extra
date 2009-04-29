@@ -2,7 +2,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module HSP.WebT where
 
-
 import HSP
 import Control.Applicative
 import Control.Monad.Identity
@@ -77,3 +76,5 @@ instance (Monad m) => SetAttr (WebT m) XML where
         case xml of
          CDATA _ _       -> return xml
          Element n as cs -> return $ Element n (foldr (:) as (map unWAttr attrs)) cs
+
+instance (Monad m) => XMLGenerator (WebT m)

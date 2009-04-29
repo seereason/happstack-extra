@@ -2,7 +2,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module HSP.ServerPartT where
 
-
 import HSP
 import Control.Applicative
 import Control.Monad.Identity
@@ -13,7 +12,6 @@ instance (Monad m) => HSX.XMLGen (ServerPartT m) where
     type HSX.XML (ServerPartT m) = XML
     newtype HSX.Child (ServerPartT m) = SChild { unSChild :: XML }
     newtype HSX.Attribute (ServerPartT m) = SAttr { unSAttr :: Attribute }
-
     genElement n attrs children = 
         do attribs <- map unSAttr <$> asAttr attrs
            childer <- flattenCDATA . map unSChild <$> asChild children
@@ -78,3 +76,5 @@ instance (Monad m) => SetAttr (ServerPartT m) XML where
         case xml of
          CDATA _ _       -> return xml
          Element n as cs -> return $ Element n (foldr (:) as (map unSAttr attrs)) cs
+
+instance (Monad m) => XMLGenerator (ServerPartT m)
