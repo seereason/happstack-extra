@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.39) unstable; urgency=low
+
+  * Added ToMessage instance for RSS type from the feed package
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 13 May 2009 17:25:47 -0500
+
 haskell-happstack-extra (0.38) unstable; urgency=low
 
   * Add XMLGenerator instances for ServerPartT and WebT

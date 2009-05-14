@@ -33,7 +33,12 @@ Build-Depends: debhelper (>= 5.0),
 	       libghc6-formlets-prof (>= 0.4.8-5),
 	       haskell-formlets-doc (>= 0.4.8-5),
 	       libghc6-syb-with-class-prof,
-               trhsx
+               trhsx,
+               libghc6-feed-prof
+               haskell-feed-doc
+               libghc6-pandoc-prof
+               libghc6-xml-prof
+               haskell-xml-doc
 Standards-Version: 3.7.2.2
 
 Package: libghc6-happstack-extra-dev
