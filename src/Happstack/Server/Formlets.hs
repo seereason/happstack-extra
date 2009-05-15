@@ -21,13 +21,13 @@ import Prelude hiding (div, maybe)
 import Text.Formlets (Form, Env, runFormState)
 
 -- |handleForm - a convenience function for using Formlets in Happstack
-handleForm :: forall a. forall x. forall m. forall r. (Monad m) =>
+handleForm :: forall a. forall xml1 forall xml2. forall m. forall r. (Monad m) =>
               String -- ^ prefix
            -> URI -- ^ url for action attribute in form
-           -> (x -> r) -- ^ function to render the page that the form goes in
-           -> Form x m a -- ^ the form
+           -> (xml2 -> r) -- ^ function to render the page that the form goes in
+           -> Form xml1 m a -- ^ the form
            -> (a -> WebT m r) -- ^ function which handles POSTed results that successfully validate
-           -> (Env -> URI -> [String] -> x -> x)
+           -> (Env -> URI -> [String] -> xml1 -> xml2)
            -> ServerPartT m r
 handleForm prefix action page frm handleOk formXML = msum
     [ methodM GET >> ok (page (createForm [] prefix action [] frm formXML))
@@ -42,7 +42,7 @@ handleForm prefix action page frm handleOk formXML = msum
                       Success s -> handleOk s
     ]
 
-createForm :: forall a. forall x. forall m. (Monad m) => Env -> String -> URI -> [String] -> Form x m a -> (Env -> URI -> [String] -> x -> x) -> x
+createForm :: forall a. forall xml1. forall xml2. forall m. (Monad m) => Env -> String -> URI -> [String] -> Form xml1 m a -> (Env -> URI -> [String] -> xml1 -> xml2) -> xml2
 createForm env prefix action' faults frm formXML =
     -- TheForm env action' faults xml 
     formXML env action' faults xml
