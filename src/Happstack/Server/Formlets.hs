@@ -21,7 +21,7 @@ import Prelude hiding (div, maybe)
 import Text.Formlets (Form, Env, runFormState)
 
 -- |handleForm - a convenience function for using Formlets in Happstack
-handleForm :: forall a. forall xml1 forall xml2. forall m. forall r. (Monad m) =>
+handleForm :: forall a. forall xml1. forall xml2. forall m. forall r. (Monad m) =>
               String -- ^ prefix
            -> URI -- ^ url for action attribute in form
            -> (xml2 -> r) -- ^ function to render the page that the form goes in
