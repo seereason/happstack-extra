@@ -22,8 +22,9 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Happstack.Server(RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), getHeader, multi, noopValidator
-                   , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq)
+import Happstack.Server as Happstack (RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), ServerMonad(..), getHeader, multi, noopValidator
+                   , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq) 
+import HSP
 import Happstack.Server.HTTP.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
@@ -35,8 +36,8 @@ debug404 =
     withRequest $ \rq -> notFound (setValidator noopValidator (toResponse (prettyRequest rq)))
 
 -- |pretty print the Request as Html
-prettyRequest :: Request -> Html
-prettyRequest (Request method paths uri query inputs cookies version headers body' peer)
+prettyRequest :: Happstack.Request -> Html
+prettyRequest (Happstack.Request method paths uri query inputs cookies version headers body' peer)
           = thehtml ((thetitle (toHtml "404"))  +++
                      (body ((h1 (toHtml "Requested object not found.")) +++
                             (dlist
@@ -2171,3 +2172,11 @@ instance (Monad m) => Applicative (ReaderT r m) where
 instance (MonadPlus m) => Alternative (ReaderT r m) where
     empty = unwrapMonad empty
     f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)
+
+instance (MonadPlus m) => MonadPlus (XMLGenT m) where
+    mzero = XMLGenT mzero
+    (XMLGenT m) `mplus` (XMLGenT n) = XMLGenT $ m `mplus` n
+
+instance (ServerMonad m) => ServerMonad (XMLGenT m) where
+    askRq   = XMLGenT askRq
+    localRq f (XMLGenT m) = XMLGenT (localRq f m)
