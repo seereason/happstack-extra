@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.41) unstable; urgency=low
+
+  * Added formletPart
+  * Added MonadPlus and ServerMonad instances for XMLGenT
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 18 Jul 2009 15:50:56 -0500
+
 haskell-happstack-extra (0.40) unstable; urgency=low
 
   * Allow different types for the input and output of createForm and handleForm
