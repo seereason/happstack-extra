@@ -6,7 +6,6 @@ module Happstack.Server.Main
 import Control.Concurrent (MVar, forkIO, killThread)
 import Control.Monad (liftM, msum)
 import Happstack.Server (Conf(..), nullConf, simpleHTTP, wdgHTMLValidator, ToMessage, ServerPartT)
-import Happstack.Server.CookieFixer(cookieFixer)
 import Happstack.State.Control(waitForTermination)
 import Happstack.Util.Cron(cron)
 import Happstack.State (Proxy(..), Saver(Queue, FileSaver), createCheckpoint, runTxSystem, shutdownSystem, Methods, Component, TxControl)
@@ -21,7 +20,7 @@ main name entryPoint impl = do
             Left e -> error (unlines e)
             Right c -> c
   control <- startSystemState' (store conf') entryPoint
-  tid <- forkIO $ simpleHTTP (conf conf') (cookieFixer . msum . impl $ static conf')
+  tid <- forkIO $ simpleHTTP (conf conf') (msum . impl $ static conf')
   cronId <- forkIO $ cron (60*60*24) (createCheckpoint control)
   putStrLn ("running on port " ++ show (port (conf conf')) ++ "...")
   waitForTermination
