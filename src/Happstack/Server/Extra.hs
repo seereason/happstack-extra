@@ -2173,10 +2173,6 @@ instance (MonadPlus m) => Alternative (ReaderT r m) where
     empty = unwrapMonad empty
     f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)
 
-instance (MonadPlus m) => MonadPlus (XMLGenT m) where
-    mzero = XMLGenT mzero
-    (XMLGenT m) `mplus` (XMLGenT n) = XMLGenT $ m `mplus` n
-
 instance (ServerMonad m) => ServerMonad (XMLGenT m) where
     askRq   = XMLGenT askRq
     localRq f (XMLGenT m) = XMLGenT (localRq f m)
