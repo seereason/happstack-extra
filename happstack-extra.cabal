@@ -10,16 +10,18 @@ Description:      A collection of components built on top of Happstack+HSP, incl
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.WebT, HSP.ServerPartT
-		  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
+                  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
                   Happstack.Data.Serialize.Extra, 
-		  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
+                  Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
-                  Happstack.Server.Formlets, Happstack.Server.Feed, HSP.Pandoc
+                  Happstack.Server.Formlets, Happstack.Server.Feed, HSP.Pandoc,
+                  Happstack.Data.IxSet.POSet, Happstack.Data.IxSet.Triplets, Happstack.Data.IxSet.Revision
                   
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat,
-		  syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4,
+                  syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4,
                   happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, happstack,
                   RJson, Extra >= 1.27, applicative-extras, formlets, feed, xml, pandoc
+hs-source-dirs:   src
 
 Build-Type:       Simple
 Category:         Web, Language

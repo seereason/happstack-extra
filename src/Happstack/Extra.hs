@@ -1,5 +1,8 @@
 module Happstack.Extra 
  ( module Happstack.Data.IxSet.Extra
+ , module Happstack.Data.IxSet.POSet
+ , module Happstack.Data.IxSet.Triplets
+ , module Happstack.Data.IxSet.Revision
  , module Happstack.Data.User.Password
  , module Happstack.Data.Serialize.Extra
  , module Happstack.Server.Account
@@ -11,6 +14,9 @@ module Happstack.Extra
  ) where
 
 import Happstack.Data.IxSet.Extra
+import Happstack.Data.IxSet.POSet hiding (prune)
+import Happstack.Data.IxSet.Triplets
+import Happstack.Data.IxSet.Revision
 import Happstack.Data.User.Password
 import Happstack.Data.Serialize.Extra
 import Happstack.Server.Account
