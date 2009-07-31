@@ -1,3 +1,13 @@
+haskell-happstack-extra (0.42) unstable; urgency=low
+
+  * Add Happstack.Data.IxSet.Revision, for doing revision control
+    in an IxSet.
+  * Add unit test support, and some tests of the POSet module which
+    is used by the revision code.
+  * Add a UTF8 newtype with Serialize and Version instances.
+
+ -- David Fox <dsf@seereason.com>  Fri, 31 Jul 2009 08:59:44 -0700
+
 haskell-happstack-extra (0.41) unstable; urgency=low
 
   * Added formletPart
