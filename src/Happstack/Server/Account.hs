@@ -11,10 +11,12 @@ module Happstack.Server.Account
     , defaultAccounts
     , AcctsFromIds(..)
     , AcctsFromUsers(..)
+    , AcctFromId(..)
     , ChangePassword(..)
     )
     where
 
+import Control.Applicative ((<$>))
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Maybe
@@ -111,6 +113,11 @@ acctsFromUsers names =
     do accts <- liftM accountIxSet ask
        return $ map acctData $ toList (accts @+ names)
 
+acctFromId :: (Data a, Ord a) => UserId -> Query (Accounts a) (Maybe a)
+acctFromId uid =
+    do accts <- accountIxSet <$> ask
+       return $ acctData <$> getOne (accts @= UserId)
+
 changePassword :: (Data a, Ord a) =>
                   Username ->
                   String ->
@@ -131,6 +138,7 @@ $(mkMethods ''Accounts
                 , 'create
                 , 'acctsFromIds
                 , 'acctsFromUsers
+                , 'acctFromId
                 , 'changePassword
                 ])
 

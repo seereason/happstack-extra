@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.43) unstable; urgency=low
+
+  * Accounts: Added acctById
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Thu, 06 Aug 2009 13:31:59 -0500
+
 haskell-happstack-extra (0.42) unstable; urgency=low
 
   * Add Happstack.Data.IxSet.Revision, for doing revision control
