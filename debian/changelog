@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.44) unstable; urgency=low
+
+  * Accounts: Generalize llogin
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 08 Aug 2009 13:05:10 -0500
+
 haskell-happstack-extra (0.43) unstable; urgency=low
 
   * Accounts: Added acctById

@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-# OPTIONS_GHC -fwarn-missing-signatures #-}
 module Happstack.Server.Account.Server
     ( signInDirName
@@ -16,7 +16,7 @@ import HSP.XML (XML)
 import HSP (HSP, evalHSP)
 import Happstack.Data (Default(..))
 import Happstack.Data.User.Password (newPassword)
-import Happstack.Server (Method(GET, POST), WebT(..), ServerPartT(..), Response,
+import Happstack.Server (FilterMonad(..),Method(GET, POST), WebT(..), ServerPartT(..), Response,
                      dir, methodM, ok, toResponse, withDataFn,
                      seeOther, look, anyRequest,
                      mkCookie, addCookie, readCookieValue, methodSP)
@@ -28,8 +28,8 @@ import Happstack.State (query, update)
 
 -- |Try to authenticate a user and password, and on success (creation
 -- of the new session) return the account data and session ID.
-llogin :: (MonadIO m, AccountData a, SessionData s) =>
-          (String -> UserId -> a -> s) -> String -> String -> WebT m (Maybe (Account a), Maybe SessionId)
+llogin :: (MonadIO m, AccountData a, SessionData s, FilterMonad Response m) =>
+          (String -> UserId -> a -> s) -> String -> String -> m (Maybe (Account a), Maybe SessionId)
 llogin makeSess u p = 
     do a <- query (Authenticate u p)
        case a of
