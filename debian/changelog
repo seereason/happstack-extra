@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.45) unstable; urgency=low
+
+  * Added FilterResponse and WebMonad instances of XMLGenT
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 08 Aug 2009 15:50:31 -0500
+
 haskell-happstack-extra (0.44) unstable; urgency=low
 
   * Accounts: Generalize llogin

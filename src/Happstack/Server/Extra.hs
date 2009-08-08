@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Happstack.Server.Extra 
     ( debug404
     , prettyRequest
@@ -22,7 +23,7 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Happstack.Server as Happstack (RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), ServerMonad(..), getHeader, multi, noopValidator
+import Happstack.Server as Happstack (RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, multi, noopValidator
                    , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq) 
 import HSP
 import Happstack.Server.HTTP.Types (Input(inputValue))
@@ -2176,3 +2177,11 @@ instance (MonadPlus m) => Alternative (ReaderT r m) where
 instance (ServerMonad m) => ServerMonad (XMLGenT m) where
     askRq   = XMLGenT askRq
     localRq f (XMLGenT m) = XMLGenT (localRq f m)
+
+instance (FilterMonad a m) => FilterMonad a (XMLGenT m) where
+    setFilter = XMLGenT . setFilter
+    composeFilter f = XMLGenT (composeFilter f)
+    getFilter (XMLGenT m) = XMLGenT (getFilter m)
+
+instance (WebMonad a m) => WebMonad a (XMLGenT m) where
+    finishWith r = XMLGenT $ finishWith r
