@@ -116,7 +116,7 @@ acctsFromUsers names =
 acctFromId :: (Data a, Ord a) => UserId -> Query (Accounts a) (Maybe a)
 acctFromId uid =
     do accts <- accountIxSet <$> ask
-       return $ acctData <$> getOne (accts @= UserId)
+       return $ acctData <$> getOne (accts @= uid)
 
 changePassword :: (Data a, Ord a) =>
                   Username ->
