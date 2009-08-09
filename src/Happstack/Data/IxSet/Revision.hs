@@ -16,6 +16,7 @@ module Happstack.Data.IxSet.Revision
     , combineInfo
     , showRev
     , combine3
+    , combine3traced
     ) where
 
 import Control.Applicative.Error (Failing(..))
@@ -32,6 +33,8 @@ import Happstack.State (Version(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (gzip3)
+
+import Debug.Trace
 
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
@@ -194,6 +197,20 @@ combine3 original left right =
           | geq original right = Just left
           | geq left right = Just left
           | otherwise = Nothing
+
+combine3traced :: (Revisable a, Data a) => a -> a -> a -> Maybe a
+combine3traced original left right =
+    gzip3 f original (putRevisionInfo rev left) (putRevisionInfo rev right)
+    where
+      rev = getRevisionInfo original
+      f :: forall a. (Data a) => a -> a -> a -> Maybe a
+      f original left right
+          | geq original left = Just right
+          | geq original right = Just left
+          | geq left right = Just left
+          | otherwise = trace ("Mismatch:" ++ "\n original=" ++ gshow original ++
+                                              "\n left    =" ++ gshow left ++
+                                              "\n right   =" ++ gshow right) Nothing
 
 -- |Use combine3 to merge as many of the elements in heads as
 -- possible, returning the new list.  Consider the mergeable relation
