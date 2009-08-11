@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.48) unstable; urgency=low
+
+  * Modify the Triplets and Revision modules so we can limit traversal of
+    data structures, to avoid traversing each character of every string
+    and so forth.  An extra argument is added to combine, combine3 and
+    combine3traced.
+
+ -- David Fox <dsf@seereason.com>  Tue, 11 Aug 2009 11:59:14 -0700
+
 haskell-happstack-extra (0.47) unstable; urgency=low
 
   * Add a version of combine3 to Happstack.Data.IxSet.Revision (called
