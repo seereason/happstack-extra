@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances,
              MultiParamTypeClasses, RankNTypes, TemplateHaskell,
              UndecidableInstances #-}
+{-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Data.IxSet.Revision
     ( Ident(..)
     , Revision(..)
@@ -19,7 +20,7 @@ module Happstack.Data.IxSet.Revision
     , combine3traced
     ) where
 
-import Control.Applicative.Error (Failing(..))
+--import Control.Applicative.Error (Failing(..))
 import Data.Generics
 import Data.List (tails, partition, intercalate)
 import Data.Maybe (fromJust, isJust)

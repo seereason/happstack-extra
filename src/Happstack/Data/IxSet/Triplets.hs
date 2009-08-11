@@ -4,11 +4,17 @@ module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
     , gzipWithT3
     , gzip3
-    -- , combine3
+    , gzip3But
+    , extQ3
+    , mkQ3
+    , gzip3Q
     ) where
 
 import Prelude hiding (GT)
 import Data.Generics
+import Data.Maybe (fromMaybe)
+
+import Debug.Trace
 
 -- As originally defined: Twin map for transformation
 
@@ -90,20 +96,80 @@ gzipWithM3 f x y z =
    perkid' a d = (tail a, unGQ (head a) d)
    funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
-gzip3 ::
-   (forall x. Data x => x -> x -> x -> Maybe x)
- -> (forall x. Data x => x -> x -> x -> Maybe x)
+type GB = GenericQ (GenericQ (GenericQ Bool))
+     -- = (Data a, Data b, Data c) => a -> b -> c -> Bool
+type GB' = (forall x. Data x => x -> x -> x -> Bool)
+type GM = GenericQ (GenericQ (GenericM Maybe))
+     -- = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
+type GM' = (forall x. Data x => x -> x -> x -> Maybe x)
 
-gzip3 f = gzip3' f'
- where
- f' :: GenericQ (GenericQ (GenericM Maybe))
- f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
- gzip3' ::
-      GenericQ (GenericQ (GenericM Maybe))
-   -> GenericQ (GenericQ (GenericM Maybe))
- gzip3' f x y z =
-   f x y z
-   `orElse`
-   if and [toConstr x == toConstr y, toConstr y == toConstr z]
-     then gzipWithM3 (gzip3' f) x y z
-     else Nothing
+-- |The purpose of gzip3 is to map a polymorphic (generic) function
+-- over the "elements" of three instances of a type.  The function
+-- returns a Maybe value of the same type as the elements passed.  If
+-- it returns a Just the subtree is not traversed, the returned value
+-- is used.  If it returns Nothing the subtree is traversed.  This
+-- traversal may succeed where the top level test failed, resulting in
+-- a successful zip.  For example, the merge function wouldn't merge
+-- these three values:
+--     (1, 1)  (1, 2) (2, 1) -> (?, ?)
+-- but it could merge the two unzipped triples:
+--     (1, 1, 2) -> 2
+--     (1, 2, 1) -> 2
+--       -> (2, 2)
+gzip3 :: GM' -> GM'
+gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
+{-
+    where
+      q :: GB
+      q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
+-}
+
+-- |This function adds a test to limit the recursion of gzip3.  For
+-- example, with the merge function mentioned above you might want to
+-- avoid merging strings character by character:
+-- 
+--     gzip3 merge "dim" "kim" "dip" -> Just "kip" (no!)
+-- 
+-- so you would pass a limiting function to prevent recursing into strings:
+-- 
+--     let prim x y z = (allways x y z `mkQ3` stringFail) x y z
+--         stringFail :: String -> String -> String -> Bool
+--         stringFail _ _ _ = False
+--     gzip3But prim merge "dim" "kim" "dip" -> Nothing
+-- 
+-- this can also save a lot of time examining all the heads and tails
+-- of every string.
+gzip3But :: GB -> GM' -> GM'
+gzip3But q f x y z =
+    -- trace ("gzip3But " ++ gshow x ++ " " ++ gshow y ++ " " ++ gshow z) (return Nothing) >>
+    gzip3' f' x y z
+    where
+      -- If the three elements aren't all the type of f's arguments,
+      -- this expression will return Nothing.  Also, the f function
+      -- might return Nothing.  In those cases we call gzipWithM3 to
+      -- traverse the sub-elements.
+      f' :: GM
+      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
+      gzip3' :: GM -> GM
+      gzip3' f x y z =
+          f x y z
+         `orElse`
+           if q x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
+           then gzipWithM3 (gzip3' f) x y z
+           else Nothing
+
+extQ3 :: (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f)
+      => (a -> b -> c -> r) -> (d -> e -> f -> r) -> a -> b -> c -> r
+extQ3 d q x y z = fromMaybe (d x y z) $ cast x >>= \x' -> cast y >>= \y' -> cast z >>= \z' -> Just (q x' y' z')
+
+mkQ3 :: (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f)
+     => r -> (a -> b -> c -> r) -> d -> e -> f -> r
+mkQ3 d q x y z = extQ3 (\ _ _ _ -> d) q x y z
+
+-- |This is the minimal condition for recursing into a value - the
+-- constructors must all match.
+gzip3Q x y z =
+    let cx = toConstr x
+        cy = toConstr y
+        cz = toConstr z in
+    and [cx == cy, cy == cz]
