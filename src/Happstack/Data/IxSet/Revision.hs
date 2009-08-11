@@ -18,9 +18,11 @@ module Happstack.Data.IxSet.Revision
     , showRev
     , combine3
     , combine3traced
+    , eqEx
     ) where
 
 --import Control.Applicative.Error (Failing(..))
+import qualified Data.ByteString.Char8 as B
 import Data.Generics
 import Data.List (tails, partition, intercalate)
 import Data.Maybe (fromJust, isJust)
@@ -33,9 +35,7 @@ import Happstack.State (Version(..))
 --import Text.Formlets.Generics.Markup.Types (Markup(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (gzip3)
-
-import Debug.Trace
+import Happstack.Data.IxSet.Triplets (mergeBy, mergeByTraced, mkQ2, extQ2)
 
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
@@ -187,8 +187,9 @@ heads s =
 -- each other.  If not, the combined value is returned, otherwise
 -- Nothing.  Remember that the revision info will always differ, don't
 -- try to merge it!
-combine3 :: (Revisable a, Data a) => a -> a -> a -> Maybe a
-combine3 original left right =
+{-
+combine3' :: (Revisable a, Data a) => a -> a -> a -> Maybe a
+combine3' original left right =
     gzip3 f original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where
       rev = getRevisionInfo original
@@ -198,9 +199,35 @@ combine3 original left right =
           | geq original right = Just left
           | geq left right = Just left
           | otherwise = Nothing
+-}
+combine3 :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
+combine3 eq original left right =
+    -- Here we make sure the three revision info fields match, because
+    -- we are trying to decide whether these revisions can be merged.
+    -- It would be nice to modify eq so it considers all RevisionInfos
+    -- to be equal, but we don't actually have the RevisionInfo type
+    -- here, only a typeclass, so we first need syb-with-class support.
+    mergeBy eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
+    where rev = getRevisionInfo original
 
-combine3traced :: (Revisable a, Data a) => a -> a -> a -> Maybe a
-combine3traced original left right =
+-- Example implementation of the eq argument to combine3.
+eqEx :: GenericQ (GenericQ Bool)
+eqEx x y =
+    (geq `mkQ2` bsEq `extQ2` stringEq) x y
+    where
+      -- If the specialized eqs don't work, use the generic.  This
+      -- will throw an exception if it encounters something with a
+      -- NoRep type.
+      geq :: (Data a, Data b) => a -> b -> Bool
+      geq x y = (toConstr x == toConstr y) && and (gzipWithQ eqEx x y)
+      stringEq :: String -> String -> Bool
+      stringEq a b = (a == b)
+      bsEq :: B.ByteString -> B.ByteString -> Bool
+      bsEq a b = (a == b)
+
+{-
+combine3traced' :: (Revisable a, Data a) => a -> a -> a -> Maybe a
+combine3traced' original left right =
     gzip3 f original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where
       rev = getRevisionInfo original
@@ -212,6 +239,12 @@ combine3traced original left right =
           | otherwise = trace ("Mismatch:" ++ "\n original=" ++ gshow original ++
                                               "\n left    =" ++ gshow left ++
                                               "\n right   =" ++ gshow right) Nothing
+-}
+
+combine3traced :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
+combine3traced eq original left right =
+    mergeByTraced eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
+    where rev = getRevisionInfo original
 
 -- |Use combine3 to merge as many of the elements in heads as
 -- possible, returning the new list.  Consider the mergeable relation
@@ -220,12 +253,12 @@ combine3traced original left right =
 -- the nodes into equivalence classes and then perform the mergers on
 -- the nodes resulting in a single node per equivalence class.
 combine :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
-           IxSet a -> IxSet a -> [a] -> (IxSet a, [a])
-combine all _ [] = (all, [])
-combine all s heads =
+           (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> [a] -> (IxSet a, [a])
+combine _ all _ [] = (all, [])
+combine eq all s heads =
     (all', heads')
     where
-      (all', _, heads') = foldr combineClass (all, s, []) (classes s heads)
+      (all', _, heads') = foldr combineClass (all, s, []) (classes eq s heads)
       -- Combine the elements of an equivalence class into a single
       -- new head element.
       combineClass :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
@@ -242,30 +275,30 @@ combine all s heads =
       -- Combine two elements of the equivalence class into one, ignoring
       -- revision information for now.
       combinePair :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) => IxSet a -> a -> a -> a
-      combinePair s x y = fromJust (combine3 original (unRev x) (unRev y))
+      combinePair s x y = fromJust (combine3 eq original (unRev x) (unRev y))
           where original = maybe (error message) unRev (commonAncestor s x y)
                 message = "no common ancestor: " ++ show (getRevisionInfo x) ++ ", " ++ show (getRevisionInfo y)
       unRev x = putRevisionInfo defaultValue x
 
 combineInfo :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
-               IxSet a -> IxSet a -> a -> a -> String
-combineInfo _all s x y =
+               (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> a -> a -> String
+combineInfo eq _all s x y =
     ("Rev 1: " ++ show (getRevisionInfo x)
      ++ ", Rev 2: " ++ show (getRevisionInfo y)
      ++ ", Ancestor: " ++ show (getRevisionInfo a)
      ++ ", Combined: " ++ maybe "None" (show . getRevisionInfo) x')
     where
-      x' = combine3 a x y
+      x' = combine3 eq a x y
       a = commonAncestor' s x y
 
-classes :: (Revisable a, Indexable a b, Data a, POSet (IxSet a) a) => IxSet a -> [a] -> [[a]]
-classes s xs = 
+classes :: (Revisable a, Indexable a b, Data a, POSet (IxSet a) a) => (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> [[a]]
+classes eq s xs = 
     case xs of
       [] -> []
       (x : xs) -> let (xs', ys) = partition (combines s x) xs in
-                  (x : xs') : classes s ys
+                  (x : xs') : classes eq s ys
     where
-      combines s x y = isJust $ combine3 (commonAncestor' s x y) x y
+      combines s x y = isJust $ combine3 eq (commonAncestor' s x y) x y
 
 showRev :: RevisionInfo -> String
 showRev r = (show . unIdent . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)

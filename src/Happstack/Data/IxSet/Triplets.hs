@@ -5,9 +5,14 @@ module Happstack.Data.IxSet.Triplets
     , gzipWithT3
     , gzip3
     , gzip3But
+    , extQ2
     , extQ3
+    , extT3
     , mkQ3
+    , mkQ2
     , gzip3Q
+    , mergeBy
+    , mergeByTraced
     ) where
 
 import Prelude hiding (GT)
@@ -98,7 +103,7 @@ gzipWithM3 f x y z =
 
 type GB = GenericQ (GenericQ (GenericQ Bool))
      -- = (Data a, Data b, Data c) => a -> b -> c -> Bool
-type GB' = (forall x. Data x => x -> x -> x -> Bool)
+-- type GB' = (forall x. Data x => x -> x -> x -> Bool)
 type GM = GenericQ (GenericQ (GenericM Maybe))
      -- = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
 type GM' = (forall x. Data x => x -> x -> x -> Maybe x)
@@ -158,6 +163,10 @@ gzip3But q f x y z =
            then gzipWithM3 (gzip3' f) x y z
            else Nothing
 
+extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
+      => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r
+extQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x' y')
+
 extQ3 :: (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f)
       => (a -> b -> c -> r) -> (d -> e -> f -> r) -> a -> b -> c -> r
 extQ3 d q x y z = fromMaybe (d x y z) $ cast x >>= \x' -> cast y >>= \y' -> cast z >>= \z' -> Just (q x' y' z')
@@ -166,10 +175,43 @@ mkQ3 :: (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f)
      => r -> (a -> b -> c -> r) -> d -> e -> f -> r
 mkQ3 d q x y z = extQ3 (\ _ _ _ -> d) q x y z
 
+extT3 :: (Typeable a, Typeable b)
+      => (a -> a -> a -> Maybe a) -> (b -> b -> b -> Maybe b) -> a -> a -> a -> Maybe a
+extT3 d q x y z = fromMaybe (d x y z) $ cast x >>= \x' -> cast y >>= \y' -> cast z >>= \z' -> gcast (q x' y' z')
+
 -- |This is the minimal condition for recursing into a value - the
 -- constructors must all match.
+gzip3Q :: GB
 gzip3Q x y z =
     let cx = toConstr x
         cy = toConstr y
         cz = toConstr z in
     and [cx == cy, cy == cz]
+
+mkQ2 :: (Data a, Data b, Data c) => (a -> b -> r) -> (c -> c -> r) -> a -> b -> r
+mkQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x' y')
+
+-- |A triplet conflicts if the two new values each differ from the
+-- original, and from each other.  Otherwise, the new value that
+-- differs from the original is kept, or either of the new values if
+-- they match.
+mergeBy :: (a -> a -> Bool) -> a -> a -> a -> Maybe a
+mergeBy eq original left right =
+    if eq original left then Just right
+    else if eq original right then Just left
+         else if eq left right then Just left
+              else Nothing
+
+-- |A triplet conflicts if the two new values each differ from the
+-- original, and from each other.  Otherwise, the new value that
+-- differs from the original is kept, or either of the new values if
+-- they match.
+mergeByTraced :: Data a => (a -> a -> Bool) -> a -> a -> a -> Maybe a
+mergeByTraced eq original left right =
+    if eq original left then Just right
+    else if eq original right then Just left
+         else if eq left right then Just left
+              else trace ("Mismatch:" ++
+                          "\n o=" ++ gshow original ++
+                          "\n l=" ++ gshow left ++
+                          "\n r=" ++ gshow right) Nothing
