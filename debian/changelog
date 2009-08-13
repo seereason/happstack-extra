@@ -1,3 +1,25 @@
+haskell-happstack-extra (0.49) unstable; urgency=low
+
+  * Added some EmbedAsChild instances for ()
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Thu, 13 Aug 2009 17:35:34 -0500
+
+haskell-happstack-extra (0.48) unstable; urgency=low
+
+  * Modify the Triplets and Revision modules so we can limit traversal of
+    data structures, to avoid traversing each character of every string
+    and so forth.  An extra argument is added to combine, combine3 and
+    combine3traced.
+
+ -- David Fox <dsf@seereason.com>  Tue, 11 Aug 2009 11:59:14 -0700
+
+haskell-happstack-extra (0.47) unstable; urgency=low
+
+  * Add a version of combine3 to Happstack.Data.IxSet.Revision (called
+    combine3traced) that outputs a trace of the elements that conflict.
+
+ -- David Fox <dsf@seereason.com>  Sun, 09 Aug 2009 07:08:26 -0700
+
 haskell-happstack-extra (0.46) unstable; urgency=low
 
   * Fixed a bug in AcctById
