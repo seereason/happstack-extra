@@ -62,6 +62,8 @@ instance (Monad m) => EmbedAsChild (WebT m) String where
 instance (Monad m) => EmbedAsChild (WebT m) XML where
     asChild = XMLGenT . return . (:[]) . WChild
 
+instance Monad m => EmbedAsChild (WebT m) () where
+  asChild () = return []
 
 instance (Monad m) => AppendChild (WebT m) XML where
  appAll xml children = do

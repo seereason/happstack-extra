@@ -62,6 +62,8 @@ instance (Monad m) => EmbedAsChild (ServerPartT m) String where
 instance (Monad m) => EmbedAsChild (ServerPartT m) XML where
     asChild = XMLGenT . return . (:[]) . SChild
 
+instance Monad m => EmbedAsChild (ServerPartT m) () where
+  asChild () = return []
 
 instance (Monad m) => AppendChild (ServerPartT m) XML where
  appAll xml children = do
