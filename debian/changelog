@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.51) unstable; urgency=low
+
+  * Add Happstack.Data.IxSet.Store.  It contains a Store type class, which
+    represents the (maxId, ixset) pair we often use to store things in
+    Happstack.  It also includes a set of transactions on this type for
+    maintaining a set of Revisable elements.
+
+ -- David Fox <dsf@seereason.com>  Fri, 14 Aug 2009 15:33:31 -0700
+
 haskell-happstack-extra (0.50) unstable; urgency=low
 
   * AcctFromUser and AcctFromId return (Maybe (Account a)) instead of
