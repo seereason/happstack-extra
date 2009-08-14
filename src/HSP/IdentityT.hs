@@ -78,7 +78,7 @@ instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) (IdentityT m String)
 instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) XML where
     asChild = XMLGenT . return . (:[]) . IChild
 
-instance Monad m => EmbedAsChild (IdentityT m) () where
+instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) () where
   asChild () = return []
 
 instance (Monad m, Functor m) => AppendChild (IdentityT m) XML where
