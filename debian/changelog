@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.50) unstable; urgency=low
+
+  * AcctFromUser and AcctFromId return (Maybe (Account a)) instead of
+    (Maybe a), otherwise you will not be able to get certain information,
+    such as the UserId when you only have the Username. Should change the
+    other functions as well, but I don't want to break existing code yet.
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Fri, 14 Aug 2009 17:14:09 -0500
+
 haskell-happstack-extra (0.49) unstable; urgency=low
 
   * Added some EmbedAsChild instances for ()

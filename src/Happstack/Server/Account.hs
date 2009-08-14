@@ -32,7 +32,7 @@ class (Ord a, Serialize a, Data a, Default a) => AccountData a
 
 $(deriveAll [''Enum, ''Eq, ''Integral, ''Num, ''Ord, ''Read, ''Real, ''Show, ''Default]
   [d|
-      newtype UserId = UserId Integer
+      newtype UserId = UserId { unUserId :: Integer }
     |])
 $(deriveSerialize ''UserId)
 instance Version UserId
@@ -113,10 +113,15 @@ acctsFromUsers names =
     do accts <- liftM accountIxSet ask
        return $ map acctData $ toList (accts @+ names)
 
-acctFromId :: (Data a, Ord a) => UserId -> Query (Accounts a) (Maybe a)
+acctFromUser :: (Data a, Ord a) => [Username] -> Query (Accounts a) (Maybe (Account a))
+acctFromUser name =
+    do accts <- liftM accountIxSet ask
+       return $ getOne (accts @= name)
+
+acctFromId :: (Data a, Ord a) => UserId -> Query (Accounts a) (Maybe (Account a))
 acctFromId uid =
     do accts <- accountIxSet <$> ask
-       return $ acctData <$> getOne (accts @= uid)
+       return $ getOne (accts @= uid)
 
 changePassword :: (Data a, Ord a) =>
                   Username ->
@@ -136,9 +141,10 @@ changePassword username oldPass newPw _ =
 $(mkMethods ''Accounts
                 [ 'authenticate
                 , 'create
-                , 'acctsFromIds
-                , 'acctsFromUsers
                 , 'acctFromId
+                , 'acctsFromIds
+                , 'acctFromUser
+                , 'acctsFromUsers
                 , 'changePassword
                 ])
 
