@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.50
+Version:          0.51
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -15,7 +15,8 @@ Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.Identi
                   Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
                   Happstack.Server.Formlets, Happstack.Server.Feed, HSP.Pandoc,
-                  Happstack.Data.IxSet.POSet, Happstack.Data.IxSet.Triplets, Happstack.Data.IxSet.Revision
+                  Happstack.Data.IxSet.POSet, Happstack.Data.IxSet.Revision,
+		  Happstack.Data.IxSet.Store, Happstack.Data.IxSet.Triplets
                   
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat,
                   syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4,

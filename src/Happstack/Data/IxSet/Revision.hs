@@ -187,19 +187,6 @@ heads s =
 -- each other.  If not, the combined value is returned, otherwise
 -- Nothing.  Remember that the revision info will always differ, don't
 -- try to merge it!
-{-
-combine3' :: (Revisable a, Data a) => a -> a -> a -> Maybe a
-combine3' original left right =
-    gzip3 f original (putRevisionInfo rev left) (putRevisionInfo rev right)
-    where
-      rev = getRevisionInfo original
-      f :: forall a. (Data a) => a -> a -> a -> Maybe a
-      f original left right
-          | geq original left = Just right
-          | geq original right = Just left
-          | geq left right = Just left
-          | otherwise = Nothing
--}
 combine3 :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
 combine3 eq original left right =
     -- Here we make sure the three revision info fields match, because
@@ -224,22 +211,6 @@ eqEx x y =
       stringEq a b = (a == b)
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
-
-{-
-combine3traced' :: (Revisable a, Data a) => a -> a -> a -> Maybe a
-combine3traced' original left right =
-    gzip3 f original (putRevisionInfo rev left) (putRevisionInfo rev right)
-    where
-      rev = getRevisionInfo original
-      f :: forall a. (Data a) => a -> a -> a -> Maybe a
-      f original left right
-          | geq original left = Just right
-          | geq original right = Just left
-          | geq left right = Just left
-          | otherwise = trace ("Mismatch:" ++ "\n original=" ++ gshow original ++
-                                              "\n left    =" ++ gshow left ++
-                                              "\n right   =" ++ gshow right) Nothing
--}
 
 combine3traced :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
 combine3traced eq original left right =
