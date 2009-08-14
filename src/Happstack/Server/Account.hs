@@ -12,6 +12,7 @@ module Happstack.Server.Account
     , AcctsFromIds(..)
     , AcctsFromUsers(..)
     , AcctFromId(..)
+    , AcctFromUser(..)
     , ChangePassword(..)
     )
     where
