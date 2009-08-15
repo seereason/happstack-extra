@@ -7,7 +7,7 @@ module Happstack.Server.Account.Server
     , account
     ) where
 
-import Control.Monad(msum)
+import Control.Monad(MonadPlus, msum)
 import Control.Monad.State ()
 import Control.Monad.Trans (lift, MonadIO(liftIO))
 --import Data.Generics (Data(..))
@@ -16,7 +16,7 @@ import HSP.XML (XML)
 import HSP (HSP, evalHSP)
 import Happstack.Data (Default(..))
 import Happstack.Data.User.Password (newPassword)
-import Happstack.Server (FilterMonad(..),Method(GET, POST), WebT(..), ServerPartT(..), Response,
+import Happstack.Server (ServerMonad, FilterMonad(..),Method(GET, POST), Response,
                      dir, methodM, ok, toResponse, withDataFn,
                      seeOther, look, anyRequest,
                      mkCookie, addCookie, readCookieValue, methodSP)
@@ -39,13 +39,13 @@ llogin makeSess u p =
                  return (a, Just sId)
          Nothing -> return (Nothing, Nothing)
 
-account :: forall acct. forall sess.
-           (AccountData acct, SessionData sess) =>
+account :: forall acct sess m.
+           (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, AccountData acct, SessionData sess) =>
            (URI -> sess -> HSP XML)                     -- ^ Create the login page with the given destination URI
         -> (String -> UserId -> acct -> sess)           -- ^ Create a session
         -> (SessionId -> DelSession sess)               -- ^ Delete a session
         -> String                                       -- ^ The path to the parent serverpart, e.g. "/account"
-        -> ServerPartT IO Response
+        -> m Response
 account logInPage makeSess delSess path = msum
     [withDataFn lookPairsUnicode $ \ pairs ->
       -- We expect to see dest=<encoded uri> in the query, that is the
@@ -72,8 +72,8 @@ signUpDirName = "signUp"
 
 -- |A server part that handles the /account/signUp form action and
 -- tries to create a new account.
-handleSignUp :: (MonadIO m, AccountData a, SessionData s) =>
-                (String -> UserId -> a -> s) -> a -> URI -> Maybe String -> ServerPartT m Response
+handleSignUp :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, AccountData a, SessionData s) =>
+                (String -> UserId -> a -> s) -> a -> URI -> Maybe String -> m Response
 handleSignUp makeSess defAcct dest alert =
     dir signUpDirName $
       methodSP POST $
@@ -82,7 +82,7 @@ handleSignUp makeSess defAcct dest alert =
                         p2 <- look "newpassword2"
                         return (u, p1, p2)
                     ) $ \(u, p1, p2) ->
-        withURI $ \ here ->
+        withURISP $ \ here ->
            (if p1 /= p2
             then ok (toResponse "Passwords do not match.  Press the 'back' button and try again.")
             else do pw <- liftIO (newPassword p1)
@@ -99,46 +99,45 @@ handleSignUp makeSess defAcct dest alert =
 signInDirName :: String
 signInDirName = "signIn"
 
-handleSignIn :: (MonadIO m, AccountData a, SessionData s) =>
-          (String -> UserId -> a -> s) -> URI -> ServerPartT m Response
+handleSignIn :: (MonadPlus m, MonadIO m, AccountData a, SessionData s, ServerMonad m, FilterMonad Response m) =>
+          (String -> UserId -> a -> s) -> URI -> m Response
 handleSignIn makeSess dest =
     dir signInDirName $
       methodSP POST $
         withURISP $ \here ->
-        [ withDataFn (do u <- (look "username")
-                         p <- (look "password")
-                         return (u, p)
-                     ) $ \(u, p) ->
-          anyRequest $
-            do (a,_sid) <- llogin makeSess u p
-               case a of
-                 Nothing -> seeOther (setURIQueryAttr "alert" "Authentication failed." dest) (toResponse ())
-                 _ -> seeOther dest (toResponse ())
-        ]
+            withDataFn (do u <- (look "username")
+                           p <- (look "password")
+                           return (u, p)
+                       ) $ \(u, p) ->
+              do (a,_sid) <- llogin makeSess u p
+                 case a of
+                   Nothing -> seeOther (setURIQueryAttr "alert" "Authentication failed." dest) (toResponse ())
+                   _ -> seeOther dest (toResponse ())
+
 
 signOutDirName :: String
 signOutDirName = "signOut"
 
-handleSignOut :: (MonadIO m, SessionData sess) =>
-           (SessionId -> DelSession sess) -> URI -> SessionId -> ServerPartT m Response
+handleSignOut :: (MonadIO m, FilterMonad Response m, ServerMonad m, MonadPlus m, SessionData sess) =>
+           (SessionId -> DelSession sess) -> URI -> SessionId -> m Response
 handleSignOut delSess dest sID =
     withDataFn (readCookieValue "sessionId") $ \sID ->
       dir signOutDirName $
-        anyRequest $ do update (delSess sID)
-                        seeOther dest (toResponse ())
+        do update (delSess sID)
+           seeOther dest (toResponse ())
 
-haveSession :: (SessionData sess) =>
-               (URI -> sess -> HSP XML) -> URI -> SessionId -> ServerPartT IO Response
+haveSession :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, SessionData sess) =>
+               (URI -> sess -> HSP XML) -> URI -> SessionId -> m Response
 haveSession logInPage dest sID =
-    methodM GET >> (anyRequest $
+    methodM GET >> (
            do mSessData <- query (GetSession sID)
               let sessData =
                       case mSessData of
                         Just (Session _ sessionData) -> sessionData
                         Nothing -> defaultValue -- expired session might be better
-              ok . toResponse =<< lift (evalHSP Nothing (logInPage dest sessData)))
+              ok . toResponse =<< liftIO (evalHSP Nothing (logInPage dest sessData)))
 
-noSession :: (SessionData sess) =>
-             (URI -> sess -> HSP XML) -> URI -> ServerPartT IO Response
+noSession :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, SessionData sess) =>
+             (URI -> sess -> HSP XML) -> URI -> m Response
 noSession logInPage dest =
-    methodM GET >> (anyRequest $ ok . toResponse =<< lift (evalHSP Nothing (logInPage dest defaultValue)))
+    methodM GET >> (ok . toResponse =<< liftIO (evalHSP Nothing (logInPage dest defaultValue)))

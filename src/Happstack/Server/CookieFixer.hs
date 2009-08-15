@@ -1,10 +1,11 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 -- |used to fix broken cookie parsing is older versions of happstack. Not need in happstack >= 0.2.
 module Happstack.Server.CookieFixer 
     ( cookieFixer
     ) where
 
 import Happstack.Server.Cookie (Cookie(..))
-import Happstack.Server(ServerPartT(..),Request(..), getHeader, localRq)
+import Happstack.Server(ServerMonad, ServerPartT(..),Request(..), getHeader, localRq)
 
 import qualified Data.ByteString.Char8 as C
 import Data.Char (chr, toLower)
@@ -16,14 +17,6 @@ import Control.Monad (MonadPlus(..), ap)
 -- Hide Parsec's definitions of some Applicative functions.
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 
-instance Applicative (GenParser s a) where
-    pure = return
-    (<*>) = ap
-
-instance Alternative (GenParser s a) where
-    empty = mzero
-    (<|>) = mplus
-
 -- Less complete but more robust way of parsing cookies.  Note: not RFC 2068 compliant!
 parseCookies :: String -> [Cookie]
 parseCookies str = either (const []) id $ parse cookiesParser "" str
@@ -31,6 +24,7 @@ parseCookies str = either (const []) id $ parse cookiesParser "" str
 parseCookiesM :: (Monad m) => String -> m [Cookie]
 parseCookiesM str = either (fail "Invalid cookie syntax!") return $ parse cookiesParser str str
 
+cookiesParser :: CharParser () [Cookie]
 cookiesParser = av_pairs
     where -- Parsers based on RFC 2109
           av_pairs      = (:) <$> av_pair <*> many (char ';' *>  av_pair)
@@ -64,7 +58,7 @@ cookieFixer :: Request -> Request
 cookieFixer request = [ (cookieName c, c) | cl <- fromMaybe [] (fmap getCookies (getHeader "Cookie" (rqHeaders request))), c <- cl ]
 -}
 
-cookieFixer :: (Monad m) => ServerPartT m a -> ServerPartT m a
+cookieFixer :: (ServerMonad m) => m a -> m a
 cookieFixer = localRq (\request -> request { rqCookies = (fixedCookies request) })
     where
       fixedCookies request = [ (cookieName c, c) | cl <- fromMaybe [] (fmap getCookies (getHeader "Cookie" (rqHeaders request))), c <- cl ]

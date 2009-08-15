@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.52) unstable; urgency=low
+
+  * AcctsFromUsers and AcctsFromIds now return [(Account a)] instead of [a]
+  * Changed functions that took lists of ServerPartT to only take one
+  * Generalize many functions from ServerPartT to (ServerMonad m)
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 15 Aug 2009 10:17:53 -0500
+
 haskell-happstack-extra (0.51) unstable; urgency=low
 
   * Add Happstack.Data.IxSet.Store.  It contains a Store type class, which

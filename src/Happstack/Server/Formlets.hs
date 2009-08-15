@@ -56,14 +56,14 @@ createForm env prefix action' faults frm formXML =
 -- |Try to extract a datum from the request data and pass it to some
 -- server parts.  This is a generic Happstack function, not formlet specific,
 -- so it probably belongs in Happstack-Extra.
-withDatumSP :: (Show a, QueryEvent ev (Maybe t), MonadIO m) =>
-               RqData a -> (a -> ev) -> (t -> [ServerPartT m Response]) -> ServerPartT m Response
+withDatumSP :: (Show a, QueryEvent ev (Maybe t), MonadIO m, MonadPlus m, ServerMonad m,  FilterMonad Response m) =>
+               RqData a -> (a -> ev) -> (t -> m Response) -> m Response
 withDatumSP look queryEv f =
     withDataFn look $ \ x ->
         do mResult <- query (queryEv x)
            case mResult of
-             Nothing -> anyRequest (notFound (toResponse ("Invalid argument: " ++ show x)))
-             Just result -> msum (f result)
+             Nothing -> notFound (toResponse ("Invalid argument: " ++ show x))
+             Just result -> f result
 
 -- ^ turn a formlet into XML+ServerPartT which can be embedded in a larger document
 formletPart ::

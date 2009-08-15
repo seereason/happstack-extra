@@ -104,15 +104,15 @@ create username password acctData =
              do put (Accounts (succ nextId) (insert (Account username nextId password acctData) accountIxSet))
                 return (Right nextId)
 
-acctsFromIds :: (Data a, Ord a) => [UserId] -> Query (Accounts a) [a]
+acctsFromIds :: (Data a, Ord a) => [UserId] -> Query (Accounts a) [(Account a)]
 acctsFromIds ids =
     do accts <- liftM accountIxSet ask
-       return $ map acctData $ toList (accts @+ ids)
+       return $ toList (accts @+ ids)
 
-acctsFromUsers :: (Data a, Ord a) => [Username] -> Query (Accounts a) [a]
+acctsFromUsers :: (Data a, Ord a) => [Username] -> Query (Accounts a) [(Account a)]
 acctsFromUsers names =
     do accts <- liftM accountIxSet ask
-       return $ map acctData $ toList (accts @+ names)
+       return $ toList (accts @+ names)
 
 acctFromUser :: (Data a, Ord a) => [Username] -> Query (Accounts a) (Maybe (Account a))
 acctFromUser name =

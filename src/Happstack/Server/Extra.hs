@@ -32,9 +32,9 @@ import Text.Html
 import Text.Regex (mkRegexWithOpts, matchRegexAll)
 
 -- |a 404 page which shows the failed Request as Html
-debug404 :: (Monad m) => ServerPartT m Response
+debug404 :: (FilterMonad Response m, ServerMonad m, Monad m) => m Response
 debug404 =
-    withRequest $ \rq -> notFound (setValidator noopValidator (toResponse (prettyRequest rq)))
+    askRq >>= \rq -> notFound (setValidator noopValidator (toResponse (prettyRequest rq)))
 
 -- |pretty print the Request as Html
 prettyRequest :: Happstack.Request -> Html
@@ -73,7 +73,7 @@ withURI f =
     where rqURL rq = rqUri rq ++ rqQuery rq
 
 -- |Retrieve and parse the request URL and pass it to f.
-withURISP :: (Monad m) => (URI -> [ServerPartT m a]) -> ServerPartT m a
+withURISP :: (ServerMonad m, Monad m) => (URI -> m a) -> m a
 withURISP f = askRq >>= \request -> 
         let mHost = B.unpack <$> getHeader "host" request
             mAuthority =
@@ -83,7 +83,7 @@ withURISP f = askRq >>= \request ->
                       case span (/= ':') str of
                         (host, port) -> Just (URIAuth "" host port)
             uri = (URI "http:" mAuthority (rqUri request) (rqQuery request) "" {- (rqFrag request) -})
-        in msum (f uri)
+        in f uri
 
 -- |A version of Happstack lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]

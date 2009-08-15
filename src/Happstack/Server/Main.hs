@@ -4,7 +4,7 @@ module Happstack.Server.Main
     ) where
 
 import Control.Concurrent (MVar, forkIO, killThread)
-import Control.Monad (liftM, msum)
+import Control.Monad (liftM)
 import Happstack.Server (Conf(..), nullConf, simpleHTTP, wdgHTMLValidator, ToMessage, ServerPartT)
 import Happstack.State.Control(waitForTermination)
 import Happstack.Util.Cron(cron)
@@ -12,7 +12,7 @@ import Happstack.State (Proxy(..), Saver(Queue, FileSaver), createCheckpoint, ru
 import System.Environment (getArgs)
 import System.Console.GetOpt (OptDescr(..), ArgDescr(..), ArgOrder(..), getOpt)
 
-main :: (ToMessage a, Methods st, Component st) => String -> Proxy st -> (FilePath -> [ServerPartT IO a]) -> IO ()
+main :: (ToMessage a, Methods st, Component st) => String -> Proxy st -> (FilePath -> ServerPartT IO a) -> IO ()
 main name entryPoint impl = do
   eConf <- liftM (parseConfig' name) getArgs
   let conf' =
@@ -20,7 +20,7 @@ main name entryPoint impl = do
             Left e -> error (unlines e)
             Right c -> c
   control <- startSystemState' (store conf') entryPoint
-  tid <- forkIO $ simpleHTTP (conf conf') (msum . impl $ static conf')
+  tid <- forkIO $ simpleHTTP (conf conf') (impl $ static conf')
   cronId <- forkIO $ cron (60*60*24) (createCheckpoint control)
   putStrLn ("running on port " ++ show (port (conf conf')) ++ "...")
   waitForTermination
