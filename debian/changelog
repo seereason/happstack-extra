@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.53) unstable; urgency=low
+
+  * Add a Triplet type to the IxSet revision support (left, right, common ancestor)
+  * Add a scrub function argument to most of the database transactions in the
+    IxSet revision support, to help implement permissions.
+
+ -- David Fox <dsf@seereason.com>  Sat, 15 Aug 2009 11:18:08 -0700
+
 haskell-happstack-extra (0.52) unstable; urgency=low
 
   * AcctsFromUsers and AcctsFromIds now return [(Account a)] instead of [a]
