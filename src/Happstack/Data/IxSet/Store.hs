@@ -1,25 +1,37 @@
-{-# LANGUAGE FlexibleContexts, FunctionalDependencies, MultiParamTypeClasses, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FunctionalDependencies, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell #-}
 -- |Abstracted database queries and updates on IxSets of Revisable elements.
 module Happstack.Data.IxSet.Store
     ( Store(..)
+    , Triplet(..)
     , getNextId
     , askHeads
     , askRev
+    , askHeadTriplets
     , askAllHeads
     , reviseElt
     , deleteRev
     ) where
 
-import Data.Data (Data)
+import Data.Data (Data, Typeable)
+import Data.List (tails)
+import Happstack.Data (deriveSerialize)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
+import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (revise, Revisable(getRevisionInfo, putRevisionInfo),
                                       RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), isHead)
+import Happstack.State (Version)
 
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
     getMaxId :: set -> Ident
     putMaxId :: Ident -> set -> set
     getIxSet :: set -> IxSet elt
     putIxSet :: IxSet elt -> set -> set
+
+data (Data a, Typeable a) => 
+    Triplet a = Triplet {original :: Maybe a, left :: Maybe a, right :: Maybe a} deriving (Data, Typeable)
+
+$(deriveSerialize ''Triplet)
+instance Version (Triplet a)
 
 getNextId :: (Store set elt) => set -> (set, Ident)
 getNextId x = 
@@ -28,43 +40,67 @@ getNextId x =
       newId = Ident (oldId + 1)
       (Ident oldId) = getMaxId x
 
-askHeads :: (Store set elt) => Ident -> set -> [elt]
-askHeads i store =
+askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askHeads scrub i store =
     let xis = (getIxSet store) @= i in
-    case heads xis of
+    case map scrub (heads xis) of
       [] -> error $ "AskHeads - no head: " ++ show (map getRevisionInfo (toList xis))
       xs -> xs
 
-askRev :: (Store set elt) => Revision -> set -> Maybe elt
-askRev rev store =
-    case toList (getIxSet store @= rev) of
+askRev :: (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Maybe elt
+askRev scrub rev store =
+    case map scrub (toList (getIxSet store @= rev)) of
       [] -> Nothing
-      [x] -> Just x
-      -- This really shouldn't happen
-      _ -> error ("AskRev - duplicate revisions: " ++ show rev)
+      [Just x] -> Just x
+      [Nothing] -> error "permission denied"
+      _ -> error ("duplicate revisions: " ++ show rev)
 
-askAllHeads :: (Store set elt) => set -> [elt]
-askAllHeads = heads . getIxSet
+askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Triplet elt]
+askHeadTriplets scrub i store =
+    let xis = (getIxSet store) @= i in
+    case filter (isHead . getRevisionInfo) (toList xis) of
+      [] -> []
+      rs -> triples (\ x y -> commonAncestor xis x y) rs
+    where
+      triples g xs = concatMap f (tails xs)
+          where
+            f [] = []
+            f (x : xs) =
+                -- Note that the common ancestor might be Nothing
+                -- because of the scrub function, or it might be
+                -- Nothing because it has been deleted from the
+                -- database.
+                map (\ y -> Triplet {left=scrub x, right=scrub y, original=maybe Nothing scrub (g x y)}) xs
 
-reviseElt :: (Store set elt) => elt -> set -> Either elt (set, elt)
-reviseElt x store =
+askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
+askAllHeads scrub = map scrub . heads . getIxSet
+
+reviseElt :: (Store set elt) => (elt -> Maybe elt) -> elt -> set -> Either elt (set, elt)
+reviseElt scrub x store =
     let xs = getIxSet store
         rev = revision (getRevisionInfo x)
         xis = xs @= ident rev
         xo = xis @= rev
         (xs', x') = revise xs xis x in
-    case [x'] == map (putRevisionInfo (getRevisionInfo x')) (toList xo) of
-      True -> Left x
-      False -> Right (putIxSet xs' store, x')
+    case map scrub (toList (xis @= rev)) of 
+      [Just xo] ->
+          if x' == putRevisionInfo (getRevisionInfo x') xo
+          then Left xo
+          else Right (putIxSet xs' store, x')
+      [Nothing] ->
+          error "permission denied"
+      [] -> error "not found"
+      _ -> error ("duplicate revision: " ++ show rev)
 
 -- Delete the revision from the store, and anywhere it appears in an
 -- element's parent list replace with its parent list.  Return the new
 -- head, if there still is one.
-deleteRev :: forall set elt. (Store set elt) => Revision -> set -> Either (Maybe elt) (set, Maybe elt)
-deleteRev rev store =
-    case xos of
-      [] -> Left Nothing
-      [xo] -> 
+deleteRev :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Either (Maybe elt) (set, Maybe elt)
+deleteRev scrub rev store =
+    case map scrub xos of
+      [] -> Left Nothing         -- Nothing to delete
+      [Nothing] -> Left Nothing  -- Permission denied
+      [Just xo] ->
           let number' = number . revision . getRevisionInfo
               parentRevisions' = parentRevisions . getRevisionInfo
               setParentRevisions revs x = putRevisionInfo ((getRevisionInfo x) {parentRevisions = revs}) x
