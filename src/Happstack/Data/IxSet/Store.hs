@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FunctionalDependencies, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, FunctionalDependencies, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell, UndecidableInstances #-}
 -- |Abstracted database queries and updates on IxSets of Revisable elements.
 module Happstack.Data.IxSet.Store
     ( Store(..)
@@ -12,9 +12,9 @@ module Happstack.Data.IxSet.Store
     , deleteRev
     ) where
 
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.List (tails)
-import Happstack.Data (deriveSerialize)
+import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (revise, Revisable(getRevisionInfo, putRevisionInfo),
@@ -27,8 +27,15 @@ class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | se
     getIxSet :: set -> IxSet elt
     putIxSet :: IxSet elt -> set -> set
 
-data (Data a, Typeable a) => 
-    Triplet a = Triplet {original :: Maybe a, left :: Maybe a, right :: Maybe a} deriving (Data, Typeable)
+$(deriveAll [''Eq, ''Ord, ''Read, ''Show]
+  [d|
+      -- data Triplet a = Triplet {original :: a, left :: a, right :: a}
+      data Triplet a = Triplet {original :: Maybe a, left :: a, right :: a}
+      -- data Triplet a = Triplet {original :: Maybe a, left :: Maybe a, right :: Maybe a}
+   |])
+
+instance (Ord a, Default a) => Default (Triplet a) where
+    defaultValue = Triplet defaultValue defaultValue defaultValue
 
 $(deriveSerialize ''Triplet)
 instance Version (Triplet a)
@@ -55,7 +62,7 @@ askRev scrub rev store =
       [Nothing] -> error "permission denied"
       _ -> error ("duplicate revisions: " ++ show rev)
 
-askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Triplet elt]
+askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
     let xis = (getIxSet store) @= i in
     case filter (isHead . getRevisionInfo) (toList xis) of
@@ -66,11 +73,22 @@ askHeadTriplets scrub i store =
           where
             f [] = []
             f (x : xs) =
-                -- Note that the common ancestor might be Nothing
-                -- because of the scrub function, or it might be
-                -- Nothing because it has been deleted from the
-                -- database.
-                map (\ y -> Triplet {left=scrub x, right=scrub y, original=maybe Nothing scrub (g x y)}) xs
+                -- Note that if the common ancestor is Nothing we need
+                -- to do a two way merge.  If the common ancestor is
+                -- Nothing because it is scrubbed, we don't want to
+                -- try a merge, some other user might be able to
+                -- access it and do a three way merge.
+                map (\ y -> 
+                         case g x y of
+                           Just z ->
+                               case (scrub x, scrub y, scrub z) of
+                                 (Just x', Just y', Just z') -> Just (Triplet {original=Just z', left=x', right=y'})
+                                 _ -> Nothing
+                           Nothing ->
+                               case (scrub x, scrub y) of
+                                 (Just x', Just y') -> Just (Triplet {original=Nothing, left=x', right=y'})
+                                 _ -> Nothing) xs
+
 
 askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . heads . getIxSet
@@ -80,7 +98,6 @@ reviseElt scrub x store =
     let xs = getIxSet store
         rev = revision (getRevisionInfo x)
         xis = xs @= ident rev
-        xo = xis @= rev
         (xs', x') = revise xs xis x in
     case map scrub (toList (xis @= rev)) of 
       [Just xo] ->
