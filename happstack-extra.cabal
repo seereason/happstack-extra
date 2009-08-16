@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.53
+Version:          0.54
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -26,7 +26,6 @@ hs-source-dirs:   src
 
 Build-Type:       Simple
 Category:         Web, Language
-
 Extensions:             MultiParamTypeClasses,
                         TypeFamilies,
                         FlexibleContexts,
