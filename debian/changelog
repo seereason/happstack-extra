@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.54) unstable; urgency=low
+
+  * Modify the Triplet type so only the original value is a Maybe, don't create
+    any Triplet if we can't access both the left or right values.
+
+ -- David Fox <dsf@seereason.com>  Sun, 16 Aug 2009 10:05:55 -0700
+
 haskell-happstack-extra (0.53) unstable; urgency=low
 
   * Add a Triplet type to the IxSet revision support (left, right, common ancestor)
