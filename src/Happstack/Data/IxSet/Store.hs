@@ -24,6 +24,8 @@ import Happstack.Data.IxSet.Revision (revise, merge, Revisable(getRevisionInfo, 
                                       RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head), nodeStatus)
 import Happstack.State (Version)
 
+import Extra.Trace
+
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
     getMaxId :: set -> Ident
     putMaxId :: Ident -> set -> set
@@ -70,7 +72,7 @@ askHeadTriplets scrub i store =
     let xis = (getIxSet store) @= i in
     case toList (xis @= Head) of
       [] -> []
-      rs -> triples (\ x y -> commonAncestor xis x y) rs
+      rs -> triples (\ x y -> commonAncestor xis x y) (traceRevs "heads:" rs)
     where
       triples g xs = concatMap f (tails xs)
           where
