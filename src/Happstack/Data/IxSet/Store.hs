@@ -9,11 +9,14 @@ module Happstack.Data.IxSet.Store
     , askHeadTriplets
     , askAllHeads
     , reviseElt
+    , mergeElts
+    , combineElts
     , deleteRev
     ) where
 
 import Data.Data (Data)
-import Data.List (tails)
+import Data.List (tails, partition)
+import Data.Maybe (isJust)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
@@ -108,6 +111,52 @@ reviseElt scrub x store =
           error "permission denied"
       [] -> error "not found"
       _ -> error ("duplicate revision: " ++ show rev)
+
+-- Create a new revision which is the child of several existing
+-- revisions.  In otherAnother words, merge several heads into one.
+mergeElts :: (Store set elt) => (elt -> Maybe elt) -> [elt] -> elt -> set -> (set, elt)
+mergeElts scrub parents x store =
+    let xs = getIxSet store
+        xis = xs @= ident (revision (getRevisionInfo x)) in
+    if all isJust (map scrub parents)
+    then let (xs', x') = merge xs xis parents x in (putIxSet xs' store, (traceRev "merged:" x'))
+    else error "Insuffient permissions"
+
+-- Examine the set of head revisions and merge any that are equal.
+combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> elt -> Bool) -> Ident -> set -> (set, [elt])
+combineElts scrub eq i store =
+    let xs = getIxSet (store :: set)
+        xis = toList ((xs @= i) @= Head)
+        eqcs = filter (\ xs -> length xs > 1) (equivs xis) in
+    foldr f (store, []) eqcs
+    where
+      f :: [elt] -> (set, [elt]) -> (set, [elt])
+      -- Build the new store, and the list of newly added elements.
+      f eqc (store, merged) =
+          (store', (new : merged))
+          where (store', new) = mergeElts scrub (trace ("combine: " ++ show (map getRevisionInfo eqc)) eqc) (head eqc) store
+      equivs :: [elt] -> [[elt]]
+      equivs [] = []
+      equivs (x : xs) =
+          let (equal, other) = partition (eq x) xs in
+          (traceRevs "eqc:" (x : equal) : (equivs other))
+
+traceRev :: Revisable a => String -> a -> a
+traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
+traceRevs :: Revisable a => String -> [a] -> [a]
+traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
+                             
+{-
+    case map scrub (toList (xis @= rev)) of 
+      [Just xo] ->
+          if x' == putRevisionInfo (getRevisionInfo x') xo
+          then Left xo
+          else Right (putIxSet xs' store, x')
+      [Nothing] ->
+          error "permission denied"
+      [] -> error "not found"
+      _ -> error ("duplicate revision: " ++ show rev)
+-}
 
 -- Delete the revision from the store, and anywhere it appears in an
 -- element's parent list replace with its parent list.  Return the new
