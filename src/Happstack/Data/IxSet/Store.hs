@@ -17,8 +17,8 @@ import Data.List (tails)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
-import Happstack.Data.IxSet.Revision (revise, Revisable(getRevisionInfo, putRevisionInfo),
-                                      RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), isHead)
+import Happstack.Data.IxSet.Revision (revise, merge, Revisable(getRevisionInfo, putRevisionInfo),
+                                      RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head), nodeStatus)
 import Happstack.State (Version)
 
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
@@ -65,7 +65,7 @@ askRev scrub rev store =
 askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
     let xis = (getIxSet store) @= i in
-    case filter (isHead . getRevisionInfo) (toList xis) of
+    case toList (xis @= Head) of
       [] -> []
       rs -> triples (\ x y -> commonAncestor xis x y) rs
     where
@@ -121,8 +121,8 @@ deleteRev scrub rev store =
           let number' = number . revision . getRevisionInfo
               parentRevisions' = parentRevisions . getRevisionInfo
               setParentRevisions revs x = putRevisionInfo ((getRevisionInfo x) {parentRevisions = revs}) x
-              isHead' = isHead . getRevisionInfo
-              setHead flag x = putRevisionInfo ((getRevisionInfo x) {isHead = flag}) x
+              isHead' = (== Head) . nodeStatus . getRevisionInfo
+              setHead flag x = putRevisionInfo ((getRevisionInfo x) {nodeStatus = flag}) x
               replace old new set = insert new (delete old set)
               -- In the parentRevisions list is the node or nodes
               -- which were revised to create this node.  Therefore,
@@ -134,7 +134,7 @@ deleteRev scrub rev store =
                        where f x xs = 
                                  if elem (number' x) (parentRevisions' xo) && isHead' xo && not (isHead' x)
                                  -- If the victim node was a head, its parents will now be heads
-                                 then replace x (setHead True x) xs
+                                 then replace x (setHead Head x) xs
                                  else if elem (number' xo) (parentRevisions' x)
                                       -- Remove the victim node from the parent list and add the victim's parent list
                                       then replace x (setParentRevisions (filter (/= (number' xo)) (parentRevisions' x) ++ parentRevisions' xo) x) xs
@@ -147,5 +147,6 @@ deleteRev scrub rev store =
       xos = (toList $ xis @= rev) :: [elt]      -- For each child of the victim node, replace the victim node's
 
 -- FIXME - make this a query so we don't have to convert to a list
-heads :: (Revisable a, Ord a) => IxSet a -> [a]
-heads s = filter (isHead . getRevisionInfo) . toList $ s
+heads :: (Data a, Indexable a (), Revisable a, Ord a) => IxSet a -> [a]
+heads s = toList (s @= Head)
+-- heads s = filter ((== Head) . nodeStatus . getRevisionInfo) . toList $ s

@@ -7,6 +7,8 @@ module Happstack.Data.IxSet.Revision
     , Revision(..)
     , RevisionInfo(..)
     , Revisable(..)
+    , NodeStatus(..)
+    , copyRev
     , initialRevision
     , merge
     , revise
@@ -27,9 +29,8 @@ import Data.Generics
 import Data.List (tails, partition, intercalate)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
-import Happstack.Data (Default(..), deriveNewData, deriveSerialize)
+import Happstack.Data (Default(..), deriveNewData)
 import Happstack.Data.IxSet
-import Happstack.State (Version(..))
 --import Text.Formlets (xml, check)
 --import Text.Formlets.Generics.Instances ()
 --import Text.Formlets.Generics.Markup.Types (Markup(..))
@@ -55,23 +56,26 @@ data Revision
 
 -- | The information associated with a revision to record its status.
 data RevisionInfo
-    = RevisionInfo {revision :: Revision, parentRevisions :: [Integer], isHead :: Bool}
-    deriving (Eq, Ord, Read, Show, Data, Typeable)
+    = RevisionInfo {revision :: Revision, parentRevisions :: [Integer], nodeStatus :: NodeStatus}
+    deriving (Eq, Ord, Read, Data, Typeable)
+
+instance Show RevisionInfo where
+    show r = "Rev. " ++ show (unIdent (ident (revision r))) ++ "." ++ show (number (revision r)) ++
+             if nodeStatus r == Head then " (Head)" else ""
+
+data NodeStatus = Head | NonHead deriving (Eq, Ord, Read, Show, Data, Typeable)
 
 $(deriveNewData [''Ident])
-instance Version Ident
-$(deriveSerialize ''Ident)
 $(deriveNewData [''Revision])
-instance Version Revision
-$(deriveSerialize ''Revision)
+$(deriveNewData [''NodeStatus])
 $(deriveNewData [''RevisionInfo])
-instance Version RevisionInfo
-$(deriveSerialize ''RevisionInfo)
 
 -- |Class of values that have a revision info.
 class Revisable a where
     getRevisionInfo :: a -> RevisionInfo
     putRevisionInfo :: RevisionInfo -> a -> a
+
+copyRev s d = putRevisionInfo (getRevisionInfo s) d
 
 instance (Ord a, Data a, Revisable a, Indexable a b) => POSet (IxSet a) a where
     parents s a =
@@ -96,7 +100,7 @@ initialRevision :: Revisable a => Ident -> a -> a
 initialRevision newID x =
     putRevisionInfo (RevisionInfo {revision = Revision {ident = newID, number = 1},
                                    parentRevisions = [],
-                                   isHead = True}) x
+                                   nodeStatus = Head}) x
 
 -- |Insert a revision into the index and designate it the merger of a
 -- list of existing revisions.  This first checks that all the parents
@@ -104,7 +108,7 @@ initialRevision newID x =
 -- or revised, though you can create a branch using revise.
 merge :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a -> IxSet a -> [a] -> a -> (IxSet a, a)
 merge s all parents merged =
-    if any (not . isHead . getRevisionInfo) parents
+    if any ((/= Head) . nodeStatus . getRevisionInfo) parents
     then error "Attempt to merge non-head revision"
     else let (all', _, merged') = merge' all s parents merged in (all', merged')
 
@@ -140,12 +144,12 @@ merge' all s parents merged =
           then error $ "merge': ident mismatch: " ++ show (i merged) ++ ", " ++ show (map (show . i) parents)
           else RevisionInfo {revision = Revision {ident = ident (revision (getRevisionInfo merged)), number = rev'},
                              parentRevisions = map (number . revision . getRevisionInfo) parents,
-                             isHead = True}
+                             nodeStatus = Head}
       -- The new revision number is one greater than the greatest
       -- revision in the head set, or else 1.
       rev' = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList s))
       -- unHead :: Revisable a => a -> a
-      unHead x = putRevisionInfo ((getRevisionInfo x) {isHead = False}) x
+      unHead x = putRevisionInfo ((getRevisionInfo x) {nodeStatus = NonHead}) x
       del rev ix = union (ix @> rev) (ix @< rev) 
       i = ident . revision . getRevisionInfo
 
@@ -158,7 +162,7 @@ prune s all =
     foldr remove (foldr reParent all reparentPairs) (S.toList victims)
     where
       (reparentPairs, victims) = 
-          P.prune s (commonAncestors s (filter (isHead . getRevisionInfo) (toList s)))
+          P.prune s (commonAncestors s (toList (s @= Head)))
       reParent (x, ps) = 
           let x' = putRevisionInfo ((getRevisionInfo x) {parentRevisions = (map (number . revision . getRevisionInfo) ps)}) x in
           insert x' . delete x
@@ -176,7 +180,7 @@ type Heads a = Maybe (Either a [(a, a, a)])
 -- |Return the current value of a Revisable.
 heads :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a ->  Heads a
 heads s =
-    case filter (isHead . getRevisionInfo) (toList s) of
+    case toList (s @= Head) of
       [] -> Nothing
       [x] -> Just (Left x)
       xs -> Just (Right $ concatMap conflicts (tails xs))
