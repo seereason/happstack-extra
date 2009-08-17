@@ -6,13 +6,12 @@
 -- cycle.
 module Happstack.Data.IxSet.POSet 
     ( POSet(..)
-    , ancestors
     , commonAncestor
     , commonAncestors
     , prune
     ) where
     
-import Data.List (partition, find)
+import Data.List (partition)
 import Data.Maybe (catMaybes)
 import qualified Data.Set as S
 
@@ -24,20 +23,34 @@ import qualified Data.Set as S
 class (Eq a, Ord a) => POSet s a where
     parents :: s -> a -> [a]
 
--- |All of a value's ancestors of every generation, starting with the
--- parents and proceeding to earlier generations.  Since this is a
--- partial ordering we may have repeats.
-ancestors :: POSet s a => s -> a -> [a]
-ancestors s x = 
-    f (parents s x)
-    where
-      f [] = []
-      f xs = xs ++ f (concatMap (parents s) xs)
-
 -- |Every pair of elements has a single common ancestor, possibly one
 -- of the arguments.
 commonAncestor :: POSet s a => s -> a -> a -> Maybe a
-commonAncestor s x y = find (`elem` (ancestors s y)) (ancestors s x)
+commonAncestor s x y =
+    -- Add parents to family until we find a common element
+    f (S.singleton x) (S.singleton x) (S.singleton y) (S.singleton y)
+    where
+      f xFamily xEldest yFamily yEldest =
+          let i = S.intersection xFamily yFamily in
+          if S.null xEldest && S.null yEldest
+          then Nothing
+          else case S.toList i of
+                 [] ->
+                     let -- Compute the new eldest sets - find all the parents of
+                         -- the current eldest set, then subtract anything already
+                         -- in the family.
+                         xEldest' = S.difference (S.fromList (concatMap (parents s) (S.toList xEldest))) xFamily
+                         yEldest' = S.difference (S.fromList (concatMap (parents s) (S.toList yEldest))) yFamily
+                         -- Add the new eldest set to the current family
+                         xFamily' = S.union xFamily xEldest'
+                         yFamily' = S.union yFamily yEldest' in
+                     f xFamily' xEldest' yFamily' yEldest'
+                 -- Found one, return it.  Maybe there are more than
+                 -- one, but we can do a three way merge with any of
+                 -- them.
+                 (ancestor : _) -> Just ancestor
+          
+    -- find (`elem` (ancestors s y)) (ancestors s x)
 
 -- |Find the set containing the common ancestor of every pair in xs.
 -- The result will be a superset of the input list.  I'm implementing

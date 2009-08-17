@@ -37,6 +37,8 @@ import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByTraced, mkQ2, extQ2)
 
+import Debug.Trace
+
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
 -- of the revisioned type.
@@ -72,8 +74,9 @@ class Revisable a where
     putRevisionInfo :: RevisionInfo -> a -> a
 
 instance (Ord a, Data a, Revisable a, Indexable a b) => POSet (IxSet a) a where
-    parents s a = map (\ n -> fromJust (getOne (s @+ [(revision (getRevisionInfo a)) {number = n}])))
-                    (parentRevisions . getRevisionInfo $ a)
+    parents s a =
+        concatMap get (parentRevisions (getRevisionInfo a))
+        where get n = toList (s @+ [(revision (getRevisionInfo a)) {number = n}])
 
 {-
 -- |A Set s of Revisable a's.
@@ -214,8 +217,12 @@ eqEx x y =
 
 combine3traced :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
 combine3traced eq original left right =
-    mergeByTraced eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
+    mergeByTraced conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
+          conflict o l r = trace ("conflict:" ++
+                                  "\n original=" ++ show (getRevisionInfo o) ++
+                                  "\n left=" ++ show (getRevisionInfo l) ++
+                                  "\n right=" ++ show (getRevisionInfo r)) Nothing
 
 -- |Use combine3 to merge as many of the elements in heads as
 -- possible, returning the new list.  Consider the mergeable relation
@@ -283,8 +290,6 @@ message s x y =
     ("No common ancestor: " ++ showRev rx ++ ", " ++ showRev ry ++
      "\n  parents " ++ showRev rx ++ " -> " ++ intercalate " " (map (showRev . getRevisionInfo) (parents s x))  ++
      "\n  parents " ++ showRev ry ++ " -> " ++ intercalate " " (map (showRev . getRevisionInfo) (parents s y))  ++
-     "\n  ancestors " ++ showRev rx ++ ": " ++ intercalate " " (map (showRev . getRevisionInfo) (ancestors s x)) ++
-     "\n  ancestors " ++ showRev ry ++ ": " ++ intercalate " " (map (showRev . getRevisionInfo) (ancestors s y)) ++
      "\n  s = [" ++ intercalate " " (map (showRev . getRevisionInfo) (toList s)) ++ "]" ++
      "\n  commonAncestors -> " ++ intercalate " " (map (showRev . getRevisionInfo) (S.toList (commonAncestors s [x, y]))))
     where rx = getRevisionInfo x
