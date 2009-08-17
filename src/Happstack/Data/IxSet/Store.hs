@@ -24,7 +24,7 @@ import Happstack.Data.IxSet.Revision (revise, merge, Revisable(getRevisionInfo, 
                                       RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head), nodeStatus)
 import Happstack.State (Version)
 
-import Extra.Trace
+import Debug.Trace
 
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
     getMaxId :: set -> Ident
