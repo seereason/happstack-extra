@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.55) unstable; urgency=low
+
+  * Re-implement commonAncestor so it doesn't look at more items than it
+    has to.  (It was looking at all of them, repeatedly.)
+
+ -- David Fox <dsf@seereason.com>  Sun, 16 Aug 2009 19:24:48 -0700
+
 haskell-happstack-extra (0.54) unstable; urgency=low
 
   * Modify the Triplet type so only the original value is a Maybe, don't create
