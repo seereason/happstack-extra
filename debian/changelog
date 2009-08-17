@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.56) unstable; urgency=low
+
+  * Change head flag in revision tree from a Bool to an enum.
+
+ -- David Fox <dsf@seereason.com>  Mon, 17 Aug 2009 15:35:13 -0700
+
 haskell-happstack-extra (0.55) unstable; urgency=low
 
   * Re-implement commonAncestor so it doesn't look at more items than it
