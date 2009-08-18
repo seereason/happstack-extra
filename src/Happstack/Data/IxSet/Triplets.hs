@@ -195,20 +195,16 @@ mkQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x
 -- original, and from each other.  Otherwise, the new value that
 -- differs from the original is kept, or either of the new values if
 -- they match.
-mergeBy :: (a -> a -> Bool) -> a -> a -> a -> Maybe a
-mergeBy eq original left right =
+mergeBy :: forall a. (a -> a -> a -> Maybe a) -> (a -> a -> Bool) -> a -> a -> a -> Maybe a
+mergeBy conflict eq original left right =
     if eq original left then Just right
     else if eq original right then Just left
          else if eq left right then Just left
-              else Nothing
+              else conflict original left right
 
--- |A triplet conflicts if the two new values each differ from the
--- original, and from each other.  Otherwise, the new value that
--- differs from the original is kept, or either of the new values if
--- they match.
-mergeByTraced :: (a -> a -> a -> Maybe a) -> (a -> a -> Bool) -> a -> a -> a -> Maybe a
-mergeByTraced conflict eq original left right =
-    if eq original left then trace "right" (Just right)
-    else if eq original right then trace "left" (Just left)
-         else if eq left right then trace "same" (Just left)
+mergeByM :: forall a m. (Monad m) => (a -> a -> a -> m (Maybe a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Maybe a)
+mergeByM conflict eq original left right =
+    if eq original left then return (Just right)
+    else if eq original right then return (Just left)
+         else if eq left right then return (Just left)
               else conflict original left right
