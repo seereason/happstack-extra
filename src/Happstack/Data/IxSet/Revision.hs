@@ -6,6 +6,7 @@ module Happstack.Data.IxSet.Revision
     ( Ident(..)
     , Revision(..)
     , RevisionInfo(..)
+    , RevisionInfo001(..)
     , Revisable(..)
     , NodeStatus(..)
     , copyRev
@@ -30,7 +31,7 @@ import Data.Generics
 import Data.List (tails, partition, intercalate)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
-import Happstack.Data (Default(..), deriveNewData)
+import Happstack.Data (Default(..), deriveNewData, deriveSerialize, Migrate(..))
 import Happstack.Data.IxSet
 --import Text.Formlets (xml, check)
 --import Text.Formlets.Generics.Instances ()
@@ -38,6 +39,7 @@ import Happstack.Data.IxSet
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzip3, gzip3But, gzip3Q)
+import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
@@ -63,11 +65,6 @@ instance Show RevisionInfo where
              if nodeStatus r == Head then " (Head)" else ""
 
 data NodeStatus = Head | NonHead deriving (Eq, Ord, Read, Show, Data, Typeable)
-
-$(deriveNewData [''Ident])
-$(deriveNewData [''Revision])
-$(deriveNewData [''NodeStatus])
-$(deriveNewData [''RevisionInfo])
 
 -- |Class of values that have a revision info.
 class Revisable a where
@@ -306,3 +303,35 @@ message s x y =
      "\n  commonAncestors -> " ++ intercalate " " (map (showRev . getRevisionInfo) (S.toList (commonAncestors s [x, y]))))
     where rx = getRevisionInfo x
           ry = getRevisionInfo y
+
+$(deriveNewData [''Ident])
+$(deriveNewData [''Revision])
+$(deriveNewData [''NodeStatus])
+$(deriveNewData [''RevisionInfo])
+
+---------------
+-- MIGRATION --
+---------------
+
+-- |Obsolete version of the RevisionInfo structure.  The isHead field
+-- was changed to nodeStatus :: NodeStatus.
+data RevisionInfo001
+    = RevisionInfo001 {revision001 :: Revision, parentRevisions001 :: [Integer], isHead001 :: Bool}
+    deriving (Eq, Ord, Read, Show, Data, Typeable)
+
+instance Migrate RevisionInfo001 RevisionInfo where
+    migrate r =
+        RevisionInfo { revision = revision001 r
+                     , parentRevisions = parentRevisions001 r
+                     , nodeStatus = if isHead001 r then Head else NonHead }
+
+instance Version RevisionInfo001
+$(deriveSerialize ''RevisionInfo001)
+instance Version RevisionInfo where mode = extension 1 (proxy undefined :: Proxy RevisionInfo001) :: Mode RevisionInfo
+$(deriveSerialize ''RevisionInfo)
+instance Version Revision
+$(deriveSerialize ''Revision)
+instance Version NodeStatus
+$(deriveSerialize ''NodeStatus)
+instance Version Ident
+$(deriveSerialize ''Ident)

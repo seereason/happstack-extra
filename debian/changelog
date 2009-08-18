@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.57) unstable; urgency=low
+
+  * Move the serialization instances for RevisionInfo back into
+    the library (I temporarily moved them out to avoid thinking
+    about data structure migration code.)
+
+ -- David Fox <dsf@seereason.com>  Tue, 18 Aug 2009 08:02:57 -0700
+
 haskell-happstack-extra (0.56) unstable; urgency=low
 
   * Change head flag in revision tree from a Bool to an enum.
