@@ -12,7 +12,7 @@ module Happstack.Data.IxSet.Triplets
     , mkQ2
     , gzip3Q
     , mergeBy
-    , mergeByTraced
+    , mergeByM
     ) where
 
 import Prelude hiding (GT)
