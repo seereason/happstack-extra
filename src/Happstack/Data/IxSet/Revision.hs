@@ -194,14 +194,9 @@ heads s =
 -- each other.  If not, the combined value is returned, otherwise
 -- Nothing.  Remember that the revision info will always differ, don't
 -- try to merge it!
-combine3 :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
-combine3 eq original left right =
-    -- Here we make sure the three revision info fields match, because
-    -- we are trying to decide whether these revisions can be merged.
-    -- It would be nice to modify eq so it considers all RevisionInfos
-    -- to be equal, but we don't actually have the RevisionInfo type
-    -- here, only a typeclass, so we first need syb-with-class support.
-    mergeBy eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
+combine3 :: forall a. (Revisable a) => (a -> a -> a -> Maybe a) -> (a -> a -> Bool) -> a -> a -> a -> Maybe a
+combine3 conflict eq original left right =
+    mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
 
 -- Example implementation of the eq argument to combine3.

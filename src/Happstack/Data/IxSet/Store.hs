@@ -12,6 +12,7 @@ module Happstack.Data.IxSet.Store
     , mergeElts
     , combineElts
     , deleteRev
+    , closeRev
     ) where
 
 import Data.Data (Data)
@@ -21,7 +22,7 @@ import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (revise, merge, Revisable(getRevisionInfo, putRevisionInfo),
-                                      RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head), nodeStatus)
+                                      RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
 
 import Debug.Trace
@@ -125,17 +126,20 @@ mergeElts scrub parents x store =
     else error "Insuffient permissions"
 
 -- Examine the set of head revisions and merge any that are equal.
-combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> elt -> Bool) -> Ident -> set -> (set, [elt])
+-- Return the new set of heads.
+combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> elt -> Bool) -> Ident -> set -> Either [elt] (set, [elt])
 combineElts scrub eq i store =
     let xs = getIxSet (store :: set)
         xis = toList ((xs @= i) @= Head)
-        eqcs = filter (\ xs -> length xs > 1) (equivs xis) in
-    foldr f (store, []) eqcs
+        (eqcs, singles) = partition (\ xs -> length xs > 1) (equivs xis) in
+    case foldr f (store, []) eqcs of
+      (_, []) -> Left (concat singles)
+      (store', merged) -> Right (store', merged ++ concat singles)
     where
       f :: [elt] -> (set, [elt]) -> (set, [elt])
       -- Build the new store, and the list of newly added elements.
       f eqc (store, merged) =
-          (store', (new : merged))
+          (store', (trace ("adding to list of combined heads: " ++ show (getRevisionInfo new)) new : merged))
           where (store', new) = mergeElts scrub (trace ("combine: " ++ show (map getRevisionInfo eqc)) eqc) (head eqc) store
       equivs :: [elt] -> [[elt]]
       equivs [] = []
@@ -159,6 +163,20 @@ traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
       [] -> error "not found"
       _ -> error ("duplicate revision: " ++ show rev)
 -}
+
+closeRev :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> (set, elt)
+closeRev scrub rev store =
+    let xs = getIxSet store :: IxSet elt
+        xis = xs @= ident rev :: IxSet elt
+        xos = (toList $ xis @= rev) :: [elt] in
+    case map scrub xos of
+      [Just xo] -> 
+          let xs' = delete xo xs in
+          let xo' = putRevisionInfo ((getRevisionInfo xo) {nodeStatus = NonHead}) xo in
+          (putIxSet (insert xo' xs') store, xo')
+      [Nothing] -> error "Permission denied"
+      [] -> error "Not found"
+      _ -> error "Duplicate revisions"
 
 -- Delete the revision from the store, and anywhere it appears in an
 -- element's parent list replace with its parent list.  Return the new
