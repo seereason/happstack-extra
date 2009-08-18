@@ -252,7 +252,7 @@ combine eq all s heads =
       -- Combine two elements of the equivalence class into one, ignoring
       -- revision information for now.
       combinePair :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) => IxSet a -> a -> a -> a
-      combinePair s x y = fromJust (combine3 eq original (unRev x) (unRev y))
+      combinePair s x y = fromJust (combine3 (\ _ _ _ -> Nothing) eq original (unRev x) (unRev y))
           where original = maybe (error message) unRev (commonAncestor s x y)
                 message = "no common ancestor: " ++ show (getRevisionInfo x) ++ ", " ++ show (getRevisionInfo y)
       unRev x = putRevisionInfo defaultValue x
@@ -265,7 +265,7 @@ combineInfo eq _all s x y =
      ++ ", Ancestor: " ++ show (getRevisionInfo a)
      ++ ", Combined: " ++ maybe "None" (show . getRevisionInfo) x')
     where
-      x' = combine3 eq a x y
+      x' = combine3 (\ _ _ _ -> Nothing) eq a x y
       a = commonAncestor' s x y
 
 classes :: (Revisable a, Indexable a b, Data a, POSet (IxSet a) a) => (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> [[a]]
@@ -275,7 +275,7 @@ classes eq s xs =
       (x : xs) -> let (xs', ys) = partition (combines s x) xs in
                   (x : xs') : classes eq s ys
     where
-      combines s x y = isJust $ combine3 eq (commonAncestor' s x y) x y
+      combines s x y = isJust $ combine3 (\ _ _ _ -> Nothing) eq (commonAncestor' s x y) x y
 
 showRev :: RevisionInfo -> String
 showRev r = (show . unIdent . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)
