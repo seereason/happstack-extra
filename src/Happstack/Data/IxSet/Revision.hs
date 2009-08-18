@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances,
              MultiParamTypeClasses, RankNTypes, TemplateHaskell,
              UndecidableInstances #-}
-{-# OPTIONS -fno-warn-orphans #-}
+{-# OPTIONS -fno-warn-orphans -Wwarn #-}
 module Happstack.Data.IxSet.Revision
     ( Ident(..)
     , Revision(..)
@@ -19,7 +19,8 @@ module Happstack.Data.IxSet.Revision
     , combineInfo
     , showRev
     , combine3
-    , combine3traced
+    , combine3M
+    , conflicts
     , eqEx
     ) where
 
@@ -36,9 +37,7 @@ import Happstack.Data.IxSet
 --import Text.Formlets.Generics.Markup.Types (Markup(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (mergeBy, mergeByTraced, mkQ2, extQ2)
-
-import Debug.Trace
+import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzip3, gzip3But, gzip3Q)
 
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
@@ -199,6 +198,24 @@ combine3 conflict eq original left right =
     mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
 
+type GB = GenericQ (GenericQ (GenericQ Bool))
+
+conflicts :: forall a. (Revisable a, Data a) =>
+             GB -> (forall x. Data x => x -> x -> x -> Maybe x) -> (forall x. Data x => x -> x -> Bool) -> a -> a -> a -> Maybe a
+conflicts q conflict eq original left right =
+    -- gzip3Q returns true if the constructors match
+    gzip3But q merge original left right
+    where
+      merge :: forall x. Data x => x -> x -> x -> Maybe x
+      merge o l r = 
+          if eq o l
+          then Just r
+          else if eq o r
+               then Just l
+               else if eq l r
+                    then Just l
+                    else conflict o l r
+
 -- Example implementation of the eq argument to combine3.
 eqEx :: GenericQ (GenericQ Bool)
 eqEx x y =
@@ -214,14 +231,10 @@ eqEx x y =
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
 
-combine3traced :: (Revisable a, Data a) => (GenericQ (GenericQ Bool)) -> a -> a -> a -> Maybe a
-combine3traced eq original left right =
-    mergeByTraced conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
+combine3M :: forall m a. (Revisable a, Monad m) => (a -> a -> a -> m (Maybe a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Maybe a)
+combine3M conflict eq original left right =
+    mergeByM conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
-          conflict o l r = trace ("conflict:" ++
-                                  "\n original=" ++ show (getRevisionInfo o) ++
-                                  "\n left=" ++ show (getRevisionInfo l) ++
-                                  "\n right=" ++ show (getRevisionInfo r)) Nothing
 
 -- |Use combine3 to merge as many of the elements in heads as
 -- possible, returning the new list.  Consider the mergeable relation

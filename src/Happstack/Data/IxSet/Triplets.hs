@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-
+{-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
     , gzipWithT3
@@ -10,6 +10,7 @@ module Happstack.Data.IxSet.Triplets
     , extT3
     , mkQ3
     , mkQ2
+    , gzip3F
     , gzip3Q
     , mergeBy
     , mergeByM
@@ -17,7 +18,7 @@ module Happstack.Data.IxSet.Triplets
 
 import Prelude hiding (GT)
 import Data.Generics
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 
 import Debug.Trace
 
@@ -101,12 +102,12 @@ gzipWithM3 f x y z =
    perkid' a d = (tail a, unGQ (head a) d)
    funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
-type GB = GenericQ (GenericQ (GenericQ Bool))
+type GB = GenericQ (GenericQ (GenericQ Bool))			-- Generic Bool Query
      -- = (Data a, Data b, Data c) => a -> b -> c -> Bool
 -- type GB' = (forall x. Data x => x -> x -> x -> Bool)
-type GM = GenericQ (GenericQ (GenericM Maybe))
+type GM = GenericQ (GenericQ (GenericM Maybe))			-- Generic Maybe Query
      -- = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
-type GM' = (forall x. Data x => x -> x -> x -> Maybe x)
+type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Query
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
 -- over the "elements" of three instances of a type.  The function
@@ -121,12 +122,79 @@ type GM' = (forall x. Data x => x -> x -> x -> Maybe x)
 --     (1, 1, 2) -> 2
 --     (1, 2, 1) -> 2
 --       -> (2, 2)
-gzip3 :: GM' -> GM'
-gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
 {-
+gzip3 :: PM -> PM
+gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
+-}
+gzip3F :: Data a => a -> a -> a -> Maybe a
+gzip3F o l r =
+    case dataTypeRep (dataTypeOf o) of
+      AlgRep _ -> trace ("AlgRep: " ++ gshow o) Nothing
+      _ -> if toConstr o == toConstr l then Just (trace "o==l" r)
+           else if toConstr o == toConstr r then Just (trace "o==r" l)
+                else if toConstr l == toConstr r then Just (trace "l==r" l)
+                     else trace ("o=" ++ show (toConstr o) ++
+                                 ",l=" ++ show (toConstr l) ++
+                                 ",r=" ++ show (toConstr r)) Nothing
+
+gzip3 :: PM -> PM
+gzip3 f =
+    gzip3' f'
     where
-      q :: GB
-      q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
+      f' :: GM
+      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
+      gzip3' :: GM -> GM
+      gzip3' f x y z =
+          case f x y z of
+            -- The values merged, return them
+            Just m -> Just m
+            -- The values failed to merge.
+            Nothing ->
+                -- If the constructors match
+                if and [toConstr x == toConstr y, toConstr y == toConstr z]
+                -- Traverse the fields, see if they all merge
+                then gzipWithM3 (gzip3' f) x y z
+                -- Constructors don't match, give up
+                else Nothing
+{-
+          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z]
+                           then gzipWithM3 (gzip3' f) x y z
+                           else Nothing
+-}
+
+-- traceF x = trace ("f -> " ++ if isJust x then "Just ..." else "Nothing") x
+-- traceQ x = trace ("q -> " ++ show x) x
+-- traceZip x = trace ("gzipWithM3 -> " ++ if isJust x then "Just ..." else "Nothing") x
+
+q :: GB
+q x y z = gzip3Q x y z
+{-
+    (gzip3Q `extQ3` stringFail) x y z
+    where
+      stringFail :: String -> String -> String -> Bool
+      stringFail x y z = trace ("stringFail " ++ show x ++ " " ++ show y ++ " " ++ show z) False
+      -- stringFail _ _ _ = False
+-}
+
+
+gzip3But :: GB -> PM -> PM
+gzip3But q f =
+    gzip3' f'
+    where
+      f' :: GM
+      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
+      gzip3' :: GM -> GM
+      gzip3' f x y z =
+          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z] -- q x y z
+                           then gzipWithM3 (gzip3' f) x y z
+                           else Nothing
+
+{-
+gzip3 :: PM -> PM
+gzip3 f = gzip3But q f
+
+q :: GB
+q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 -}
 
 -- |This function adds a test to limit the recursion of gzip3.  For
@@ -144,7 +212,8 @@ gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
 -- 
 -- this can also save a lot of time examining all the heads and tails
 -- of every string.
-gzip3But :: GB -> GM' -> GM'
+{-
+gzip3But :: GB -> PM -> PM
 gzip3But q f x y z =
     -- trace ("gzip3But " ++ gshow x ++ " " ++ gshow y ++ " " ++ gshow z) (return Nothing) >>
     gzip3' f' x y z
@@ -162,6 +231,7 @@ gzip3But q f x y z =
            if q x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
            then gzipWithM3 (gzip3' f) x y z
            else Nothing
+-}
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r
