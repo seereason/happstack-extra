@@ -4,16 +4,18 @@ module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
     , gzipWithT3
     , gzip3
+    , gzip3Q
     , gzip3But
     , extQ2
     , extQ3
     , extT3
     , mkQ3
     , mkQ2
-    , gzip3F
-    , gzip3Q
+    , mkP3
+    -- , gzip3F
     , mergeBy
     , mergeByM
+    , GB, GM, PB, PM
     ) where
 
 import Prelude hiding (GT)
@@ -107,6 +109,7 @@ type GB = GenericQ (GenericQ (GenericQ Bool))			-- Generic Bool Query
 -- type GB' = (forall x. Data x => x -> x -> x -> Bool)
 type GM = GenericQ (GenericQ (GenericM Maybe))			-- Generic Maybe Query
      -- = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
+type PB = (forall x. Data x => x -> x -> x -> Bool)
 type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Query
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
@@ -126,6 +129,7 @@ type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Que
 gzip3 :: PM -> PM
 gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
 -}
+{-
 gzip3F :: Data a => a -> a -> a -> Maybe a
 gzip3F o l r =
     case dataTypeRep (dataTypeOf o) of
@@ -136,7 +140,8 @@ gzip3F o l r =
                      else trace ("o=" ++ show (toConstr o) ++
                                  ",l=" ++ show (toConstr l) ++
                                  ",r=" ++ show (toConstr r)) Nothing
-
+-}
+{-
 gzip3 :: PM -> PM
 gzip3 f =
     gzip3' f'
@@ -156,46 +161,27 @@ gzip3 f =
                 then gzipWithM3 (gzip3' f) x y z
                 -- Constructors don't match, give up
                 else Nothing
+-}
 {-
           f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z]
                            then gzipWithM3 (gzip3' f) x y z
                            else Nothing
 -}
 
+mkP3 :: forall a b c r. (Data a, Data b, Data c) => r -> (a -> a -> a -> r) -> b -> c -> a -> r
+mkP3 d f x y z = fromMaybe d $ cast x >>= \x' -> cast y >>= \y' -> Just (f x' y' z)
+
 -- traceF x = trace ("f -> " ++ if isJust x then "Just ..." else "Nothing") x
 -- traceQ x = trace ("q -> " ++ show x) x
 -- traceZip x = trace ("gzipWithM3 -> " ++ if isJust x then "Just ..." else "Nothing") x
 
-q :: GB
-q x y z = gzip3Q x y z
-{-
-    (gzip3Q `extQ3` stringFail) x y z
-    where
-      stringFail :: String -> String -> String -> Bool
-      stringFail x y z = trace ("stringFail " ++ show x ++ " " ++ show y ++ " " ++ show z) False
-      -- stringFail _ _ _ = False
--}
-
-
-gzip3But :: GB -> PM -> PM
-gzip3But q f =
-    gzip3' f'
-    where
-      f' :: GM
-      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
-      gzip3' :: GM -> GM
-      gzip3' f x y z =
-          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z] -- q x y z
-                           then gzipWithM3 (gzip3' f) x y z
-                           else Nothing
-
-{-
 gzip3 :: PM -> PM
-gzip3 f = gzip3But q f
+gzip3 f = gzip3But gzip3Q f
 
-q :: GB
-q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
--}
+-- |This is the minimal condition for recursing into a value - the
+-- constructors must all match.
+gzip3Q :: GB
+gzip3Q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 
 -- |This function adds a test to limit the recursion of gzip3.  For
 -- example, with the merge function mentioned above you might want to
@@ -212,7 +198,6 @@ q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 -- 
 -- this can also save a lot of time examining all the heads and tails
 -- of every string.
-{-
 gzip3But :: GB -> PM -> PM
 gzip3But q f x y z =
     -- trace ("gzip3But " ++ gshow x ++ " " ++ gshow y ++ " " ++ gshow z) (return Nothing) >>
@@ -231,6 +216,21 @@ gzip3But q f x y z =
            if q x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
            then gzipWithM3 (gzip3' f) x y z
            else Nothing
+
+{-
+gzip3But :: GB -> PM -> PM
+gzip3But q f =
+    gzip3' f'
+    where
+      f' :: GM
+      f' x y z = traceThis (\ x' -> "gzip3But - isJust (cast x) = " ++ show (isJust x')) (cast x) >>= \x' ->
+                 traceThis (\ y' -> "gzip3But - isJust (cast x) = " ++ show (isJust y')) (cast y) >>= \y' -> 
+                 f x' y' z
+      gzip3' :: GM -> GM
+      gzip3' f x y z =
+          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z] -- q x y z
+                           then gzipWithM3 (gzip3' f) x y z
+                           else Nothing
 -}
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
@@ -249,22 +249,19 @@ extT3 :: (Typeable a, Typeable b)
       => (a -> a -> a -> Maybe a) -> (b -> b -> b -> Maybe b) -> a -> a -> a -> Maybe a
 extT3 d q x y z = fromMaybe (d x y z) $ cast x >>= \x' -> cast y >>= \y' -> cast z >>= \z' -> gcast (q x' y' z')
 
--- |This is the minimal condition for recursing into a value - the
--- constructors must all match.
-gzip3Q :: GB
-gzip3Q x y z =
-    let cx = toConstr x
-        cy = toConstr y
-        cz = toConstr z in
-    and [cx == cy, cy == cz]
-
 mkQ2 :: (Data a, Data b, Data c) => (a -> b -> r) -> (c -> c -> r) -> a -> b -> r
 mkQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x' y')
 
--- |A triplet conflicts if the two new values each differ from the
--- original, and from each other.  Otherwise, the new value that
--- differs from the original is kept, or either of the new values if
--- they match.
+-- |This function implements the f function used to do three way
+-- merging.  A triplet (original, new1, new2) conflicts if the two
+-- new values each differ from the original, and from each other.
+-- Otherwise, the new value that differs from the original is kept, or
+-- either of the new values if they match.  However, even if the
+-- values conflict, it still might be possible to do the merge by
+-- examining the components of the value.  So conflict is typically
+-- (\ _ _ _ -> Nothing), while eq could be geq, but it could also
+-- just return false for more complex datatypes that we don't want
+-- to repeatedly traverse.
 mergeBy :: forall a. (a -> a -> a -> Maybe a) -> (a -> a -> Bool) -> a -> a -> a -> Maybe a
 mergeBy conflict eq original left right =
     if eq original left then Just right
@@ -278,3 +275,6 @@ mergeByM conflict eq original left right =
     else if eq original right then return (Just left)
          else if eq left right then return (Just left)
               else conflict original left right
+
+traceThis :: (a -> String) -> a -> a
+traceThis f x = trace (f x) x
