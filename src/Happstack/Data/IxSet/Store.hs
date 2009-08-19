@@ -112,18 +112,23 @@ reviseElt scrub x store =
           else Right (putIxSet xs' store, x')
       [Nothing] ->
           error "permission denied"
-      [] -> error "not found"
+      [] -> error ("Not found: " ++ show rev)
       _ -> error ("duplicate revision: " ++ show rev)
 
--- Create a new revision which is the child of several existing
--- revisions.  In otherAnother words, merge several heads into one.
+-- |Create a new revision which is the child of several existing
+-- revisions.  In other words, merge several heads into one.  The
+-- revision number in x is ignored, but the Ident must match the
+-- parent elements.
 mergeElts :: (Store set elt) => (elt -> Maybe elt) -> [elt] -> elt -> set -> (set, elt)
 mergeElts scrub parents x store =
     let xs = getIxSet store
-        xis = xs @= ident (revision (getRevisionInfo x)) in
-    if all isJust (map scrub parents)
-    then let (xs', x') = merge xs xis parents x in (putIxSet xs' store, (traceRev "merged:" x'))
-    else error "Insuffient permissions"
+        i = ident (revision (getRevisionInfo x))
+        xis = xs @= i in
+    if any (/= i) (map (ident . revision . getRevisionInfo) parents)
+    then error "Parent idents don't match merged element"
+    else if all isJust (map scrub parents)
+         then let (xs', x') = merge xs xis parents x in (putIxSet xs' store, ({- traceRev "merged:" -} x'))
+         else error "Insuffient permissions"
 
 -- Examine the set of head revisions and merge any that are equal.
 -- Return the new set of heads.
@@ -175,7 +180,7 @@ closeRev scrub rev store =
           let xo' = putRevisionInfo ((getRevisionInfo xo) {nodeStatus = NonHead}) xo in
           (putIxSet (insert xo' xs') store, xo')
       [Nothing] -> error "Permission denied"
-      [] -> error "Not found"
+      [] -> error ("Not found: " ++ rev)
       _ -> error "Duplicate revisions"
 
 -- Delete the revision from the store, and anywhere it appears in an
