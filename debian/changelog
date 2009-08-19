@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.58) unstable; urgency=low
+
+  * Add a Happstack.Data.User.Permissions module.
+
+ -- David Fox <dsf@seereason.com>  Tue, 18 Aug 2009 10:14:26 -0700
+
 haskell-happstack-extra (0.57) unstable; urgency=low
 
   * Move the serialization instances for RevisionInfo back into

@@ -4,14 +4,14 @@ module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
     , gzipWithT3
     , gzip3
-    , gzip3Q
-    , gzip3But
+    , gzipQ3
+    , gzipBut3
     , extQ2
     , extQ3
     , extT3
     , mkQ3
     , mkQ2
-    , mkP3
+    -- , mkP3
     -- , gzip3F
     , mergeBy
     , mergeByM
@@ -105,10 +105,9 @@ gzipWithM3 f x y z =
    funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
 type GB = GenericQ (GenericQ (GenericQ Bool))			-- Generic Bool Query
-     -- = (Data a, Data b, Data c) => a -> b -> c -> Bool
--- type GB' = (forall x. Data x => x -> x -> x -> Bool)
+--      = (Data a, Data b, Data c) => a -> b -> c -> Bool
 type GM = GenericQ (GenericQ (GenericM Maybe))			-- Generic Maybe Query
-     -- = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
+--      = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
 type PB = (forall x. Data x => x -> x -> x -> Bool)
 type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Query
 
@@ -125,63 +124,13 @@ type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Que
 --     (1, 1, 2) -> 2
 --     (1, 2, 1) -> 2
 --       -> (2, 2)
-{-
 gzip3 :: PM -> PM
-gzip3 = gzip3But (\ x y z -> gzip3Q x y z)
--}
-{-
-gzip3F :: Data a => a -> a -> a -> Maybe a
-gzip3F o l r =
-    case dataTypeRep (dataTypeOf o) of
-      AlgRep _ -> trace ("AlgRep: " ++ gshow o) Nothing
-      _ -> if toConstr o == toConstr l then Just (trace "o==l" r)
-           else if toConstr o == toConstr r then Just (trace "o==r" l)
-                else if toConstr l == toConstr r then Just (trace "l==r" l)
-                     else trace ("o=" ++ show (toConstr o) ++
-                                 ",l=" ++ show (toConstr l) ++
-                                 ",r=" ++ show (toConstr r)) Nothing
--}
-{-
-gzip3 :: PM -> PM
-gzip3 f =
-    gzip3' f'
-    where
-      f' :: GM
-      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
-      gzip3' :: GM -> GM
-      gzip3' f x y z =
-          case f x y z of
-            -- The values merged, return them
-            Just m -> Just m
-            -- The values failed to merge.
-            Nothing ->
-                -- If the constructors match
-                if and [toConstr x == toConstr y, toConstr y == toConstr z]
-                -- Traverse the fields, see if they all merge
-                then gzipWithM3 (gzip3' f) x y z
-                -- Constructors don't match, give up
-                else Nothing
--}
-{-
-          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z]
-                           then gzipWithM3 (gzip3' f) x y z
-                           else Nothing
--}
-
-mkP3 :: forall a b c r. (Data a, Data b, Data c) => r -> (a -> a -> a -> r) -> b -> c -> a -> r
-mkP3 d f x y z = fromMaybe d $ cast x >>= \x' -> cast y >>= \y' -> Just (f x' y' z)
-
--- traceF x = trace ("f -> " ++ if isJust x then "Just ..." else "Nothing") x
--- traceQ x = trace ("q -> " ++ show x) x
--- traceZip x = trace ("gzipWithM3 -> " ++ if isJust x then "Just ..." else "Nothing") x
-
-gzip3 :: PM -> PM
-gzip3 f = gzip3But gzip3Q f
+gzip3 f = gzipBut3 f gzipQ3
 
 -- |This is the minimal condition for recursing into a value - the
 -- constructors must all match.
-gzip3Q :: GB
-gzip3Q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
+gzipQ3 :: GB
+gzipQ3 x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 
 -- |This function adds a test to limit the recursion of gzip3.  For
 -- example, with the merge function mentioned above you might want to
@@ -191,47 +140,32 @@ gzip3Q x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 -- 
 -- so you would pass a limiting function to prevent recursing into strings:
 -- 
---     let prim x y z = (allways x y z `mkQ3` stringFail) x y z
---         stringFail :: String -> String -> String -> Bool
---         stringFail _ _ _ = False
---     gzip3But prim merge "dim" "kim" "dip" -> Nothing
+--     let continue =
+--          (\ x y z -> extQ3 gzipQ3 x y z) x y z
+--          where
+--            stringFail :: String -> String -> String -> Bool
+--            stringFail _ _ _ = False
+--     gzipBut3 merge continue "dim" "kim" "dip" -> Nothing
 -- 
 -- this can also save a lot of time examining all the heads and tails
 -- of every string.
-gzip3But :: GB -> PM -> PM
-gzip3But q f x y z =
-    -- trace ("gzip3But " ++ gshow x ++ " " ++ gshow y ++ " " ++ gshow z) (return Nothing) >>
-    gzip3' f' x y z
+gzipBut3 :: PM -> GB -> PM
+gzipBut3 merge continue x y z =
+    gzip3' merge' x y z
     where
       -- If the three elements aren't all the type of f's arguments,
       -- this expression will return Nothing.  Also, the f function
       -- might return Nothing.  In those cases we call gzipWithM3 to
       -- traverse the sub-elements.
-      f' :: GM
-      f' x y z = cast x >>= \x' -> cast y >>= \y' -> f x' y' z
+      merge' :: GM
+      merge' x y z = cast x >>= \x' -> cast y >>= \y' -> merge x' y' z
       gzip3' :: GM -> GM
-      gzip3' f x y z =
-          f x y z
+      gzip3' merge x y z =
+          merge x y z
          `orElse`
-           if q x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
-           then gzipWithM3 (gzip3' f) x y z
+           if continue x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
+           then gzipWithM3 (gzip3' merge) x y z
            else Nothing
-
-{-
-gzip3But :: GB -> PM -> PM
-gzip3But q f =
-    gzip3' f'
-    where
-      f' :: GM
-      f' x y z = traceThis (\ x' -> "gzip3But - isJust (cast x) = " ++ show (isJust x')) (cast x) >>= \x' ->
-                 traceThis (\ y' -> "gzip3But - isJust (cast x) = " ++ show (isJust y')) (cast y) >>= \y' -> 
-                 f x' y' z
-      gzip3' :: GM -> GM
-      gzip3' f x y z =
-          f x y z `orElse` if and [toConstr x == toConstr y, toConstr y == toConstr z] -- q x y z
-                           then gzipWithM3 (gzip3' f) x y z
-                           else Nothing
--}
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r
@@ -278,3 +212,12 @@ mergeByM conflict eq original left right =
 
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
+
+{-
+mkP3 :: forall a b c r. (Data a, Data b, Data c) => r -> (a -> a -> a -> r) -> b -> c -> a -> r
+mkP3 d f x y z = fromMaybe d $ cast x >>= \x' -> cast y >>= \y' -> Just (f x' y' z)
+-}
+
+-- traceF x = trace ("f -> " ++ if isJust x then "Just ..." else "Nothing") x
+-- traceQ x = trace ("q -> " ++ show x) x
+-- traceZip x = trace ("gzipWithM3 -> " ++ if isJust x then "Just ..." else "Nothing") x

@@ -38,7 +38,7 @@ import Happstack.Data.IxSet
 --import Text.Formlets.Generics.Markup.Types (Markup(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzip3, gzip3But, gzip3Q)
+import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzip3, gzipBut3, gzipQ3)
 import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 
 -- We need newtypes for each of these so we can make them IxSet
@@ -200,8 +200,7 @@ type GB = GenericQ (GenericQ (GenericQ Bool))
 conflicts :: forall a. (Revisable a, Data a) =>
              GB -> (forall x. Data x => x -> x -> x -> Maybe x) -> (forall x. Data x => x -> x -> Bool) -> a -> a -> a -> Maybe a
 conflicts q conflict eq original left right =
-    -- gzip3Q returns true if the constructors match
-    gzip3But q merge original left right
+    gzipBut3 merge q original left right
     where
       merge :: forall x. Data x => x -> x -> x -> Maybe x
       merge o l r = 

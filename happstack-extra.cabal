@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.57
+Version:          0.58
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -10,8 +10,9 @@ Description:      A collection of components built on top of Happstack+HSP, incl
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.IdentityT, HSP.WebT, HSP.ServerPartT
-                  Happstack.Extra, Happstack.Data.IxSet.Extra, Happstack.Data.User.Password, Happstack.Server.Session, 
-                  Happstack.Data.Serialize.Extra, 
+                  Happstack.Extra, Happstack.Data.IxSet.Extra,
+                  Happstack.Data.User.Password, Happstack.Data.User.Permissions,
+                  Happstack.Server.Session, Happstack.Data.Serialize.Extra, 
                   Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
                   Happstack.Server.Formlets, Happstack.Server.Feed, HSP.Pandoc,
