@@ -6,7 +6,7 @@ module Happstack.Data.IxSet.Merge
 
 import qualified Data.ByteString as B
 import Data.Data (Data, toConstr)
-import Data.Generics (gshow, geq, DataRep(AlgRep, NoRep), dataTypeRep, dataTypeOf, gmapQ)
+import Data.Generics (gshow, geq, DataRep(AlgRep), dataTypeRep, dataTypeOf, gmapQ)
 import Data.Maybe (isJust)
 import Debug.Trace
 import Happstack.Data.IxSet.Triplets (GB, PM, mkQ2, extQ2, extQ3, extT3, gzipQ3, mergeBy, gzipBut3)
@@ -94,7 +94,7 @@ threeWayMerge' o l r =
 
 merge' :: forall a. (Data a) => a -> a -> a -> Maybe a
 -- merge' = mergeBy conflict' mergeEq'
-merge' = mergeBy conflict' mergeEq
+merge' = mergeBy conflict' mergeEq'
 
 conflict' :: PM
 conflict' o l r =
@@ -120,4 +120,5 @@ bsEq' a b = traceThis (\ flag -> "bsEq " ++ show a ++ " " ++ show b ++ " -> " ++
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
 
-tshow x = show (dataTypeRep (dataTypeOf x))
+_tshow :: Data a => a -> String
+_tshow x = show (dataTypeRep (dataTypeOf x))
