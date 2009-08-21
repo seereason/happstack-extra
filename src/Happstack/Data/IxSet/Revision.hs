@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances,
-             MultiParamTypeClasses, RankNTypes, TemplateHaskell,
+             MultiParamTypeClasses, RankNTypes, ScopedTypeVariables, TemplateHaskell,
              UndecidableInstances #-}
 {-# OPTIONS -fno-warn-orphans -Wwarn #-}
 module Happstack.Data.IxSet.Revision
@@ -41,6 +41,8 @@ import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3)
 import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 
+import Debug.Trace
+
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
 -- of the revisioned type.
@@ -74,7 +76,11 @@ class Revisable a where
     getRevisionInfo :: a -> RevisionInfo
     putRevisionInfo :: RevisionInfo -> a -> a
 
+copyRev :: (Revisable a, Revisable b) => a -> b -> b
 copyRev s d = putRevisionInfo (getRevisionInfo s) d
+
+changeRevisionInfo :: Revisable a => (RevisionInfo -> RevisionInfo) -> a -> a
+changeRevisionInfo f x = putRevisionInfo (f (getRevisionInfo x)) x
 
 instance (Ord a, Data a, Revisable a, Indexable a b) => POSet (IxSet a) a where
     parents s a =
@@ -101,56 +107,53 @@ initialRevision newID x =
                                    parentRevisions = [],
                                    nodeStatus = Head}) x
 
--- |Insert a revision into the index and designate it the merger of a
--- list of existing revisions.  This first checks that all the parents
--- are heads - you can't merge something that has already been merged
--- or revised, though you can create a branch using revise.
-merge :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a -> IxSet a -> [a] -> a -> (IxSet a, a)
-merge s all parents merged =
+{-
+merge :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a -> Ident -> [a] -> a -> (IxSet a, a)
+merge all i parents merged =
     if any ((/= Head) . nodeStatus . getRevisionInfo) parents
     then error "Attempt to merge non-head revision"
-    else let (all', _, merged') = merge' all s parents merged in (all', merged')
+    merge' all i parents merged
+-}
 
 -- |Revise is a special case of merge, where we replace a single
 -- element (rather than several) with one new element.
-revise :: (Revisable a, Ord a, Data a, Indexable a b) => IxSet a -> IxSet a -> a -> (IxSet a, a)
-revise all revs revised =
-    -- If s is empty there are no previous revisions, so we need to
-    -- create revision 1.
-    (all', revised')
-    where (all', _, revised') =
-              merge' all revs (toList (all @= revision (getRevisionInfo revised))) revised
+revise :: (Revisable a, Ord a, Data a, Indexable a b) => IxSet a -> a -> a -> (IxSet a, a)
+revise all parent revised = merge all [parent] revised
 
--- |Helper function for creating, merging and revising.  It inserts a
--- revision into the index and designates it the merger of zero or
--- more revisions given by the argument.  It returns a pair containing
--- the new set and the new element.
-merge' :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) =>
-          IxSet a -> IxSet a -> [a] -> a -> (IxSet a, IxSet a, a)
-merge' all s parents merged =
-    (all', s', merged')
+-- |Insert a revision into the index and designate it the merger of a
+-- list of existing revisions.  The status of the new revision will be
+-- set to Head, the status of the parents set to NonHead.  Note that
+-- this can be used to create a revision (by passing an empty parent
+-- list), revise a single item, or merge several items.
+merge :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) =>
+          IxSet a -> [a] -> a -> (IxSet a, a)
+merge all parents merged =
+    if any (/= ident rev) (map ident parentRevs)
+    then error $ "merge: ident mismatch: merged=" ++ show (ident rev) ++ ", parents=" ++ show parentRevs
+    else (all'', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
     where
-      -- Add the new element to all, and reset the isHead flag of all the parents
-      all' = insert merged' all''
-      all'' = foldr (\ x -> insert (unHead x) . del (revision (getRevisionInfo x))) all parents
-      -- Add the new element to the head set, and remove all the parents
-      s' = insert merged' (foldr delete s parents)
+      -- Add the 
+      all'' = insert merged' all'
+      all' = foldr unHead all parents
+      unHead :: a -> IxSet a -> IxSet a
+      unHead x xs = insert x' (delete x xs)
+          where x' :: a
+                x' = changeRevisionInfo f x
+                f :: RevisionInfo -> RevisionInfo
+                f x = x {nodeStatus = NonHead}
       -- Put the new revision info into the merged element
       merged' = putRevisionInfo info' merged
       -- Create the new revision info
-      info' =
-          if any ((/=) . i $ merged) (map i parents)
-          then error $ "merge': ident mismatch: " ++ show (i merged) ++ ", " ++ show (map (show . i) parents)
-          else RevisionInfo {revision = Revision {ident = ident (revision (getRevisionInfo merged)), number = rev'},
-                             parentRevisions = map (number . revision . getRevisionInfo) parents,
-                             nodeStatus = Head}
+      info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
       -- The new revision number is one greater than the greatest
-      -- revision in the head set, or else 1.
-      rev' = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList s))
-      -- unHead :: Revisable a => a -> a
-      unHead x = putRevisionInfo ((getRevisionInfo x) {nodeStatus = NonHead}) x
-      del rev ix = union (ix @> rev) (ix @< rev) 
-      i = ident . revision . getRevisionInfo
+      -- revision in the head set, or else 1.  FIXME: We are assuming
+      -- that there is no non-head revision greater than the maximum
+      -- head revision.  We actually need to store the maxRevision with
+      -- the report store, as we do maxIdent.
+      rev' = rev {number = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList heads))}
+          where heads = all @= ident rev @= Head
+      parentRevs = map (revision . getRevisionInfo) parents
+      rev = revision . getRevisionInfo $ merged
 
 -- |Remove all the nodes from all which are (1) in s, (2) not heads,
 -- and (3) not common ancestors of heads.  This is a garbage collector
@@ -241,25 +244,28 @@ combine3M conflict eq original left right =
 -- thus an equivalence relation or partition.  We first want to group
 -- the nodes into equivalence classes and then perform the mergers on
 -- the nodes resulting in a single node per equivalence class.
-combine :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
-           (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> [a] -> (IxSet a, [a])
-combine _ all _ [] = (all, [])
-combine eq all s heads =
-    (all', heads')
+combine :: forall a b. (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
+           (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> (IxSet a, [a])
+combine _ all [] = (all, [])
+combine eq set heads@(head : _) =
+    if all (== i) idents
+    then (set', heads')
+    else error $ "combine: ident mismatch: " ++ show idents
     where
-      (all', _, heads') = foldr combineClass (all, s, []) (classes eq s heads)
+      (set', heads') = foldr combineClass (set, []) (classes eq (set @= i) heads)
       -- Combine the elements of an equivalence class into a single
       -- new head element.
       combineClass :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
-                      [a] -> (IxSet a, IxSet a, [a]) -> (IxSet a, IxSet a, [a])
-      combineClass parents@(x0 : xs) (all, s, heads) =
-          (all', s', merged : heads)
-          where (all', s', merged) = merge' all s parents combined'
+                      [a] -> (IxSet a, [a]) -> (IxSet a, [a])
+      combineClass parents@(x0 : xs) (set, heads) =
+          (set', merged : heads)
+          where (set', merged) = merge set parents combined'
                 -- We removed the revision info so it wouldn't cause
                 -- mismatches, now we need to put it back.
                 combined' = putRevisionInfo (defaultValue {revision = defaultValue {ident = ident . revision . getRevisionInfo $ x0}}) combined
                 -- Combine the class elements into a single element
                 combined = foldr (combinePair s) x0 xs
+                s = set @= i
       combineClass [] _ = error "combine: empty equivalence class!"
       -- Combine two elements of the equivalence class into one, ignoring
       -- revision information for now.
@@ -268,6 +274,8 @@ combine eq all s heads =
           where original = maybe (error message) unRev (commonAncestor s x y)
                 message = "no common ancestor: " ++ show (getRevisionInfo x) ++ ", " ++ show (getRevisionInfo y)
       unRev x = putRevisionInfo defaultValue x
+      idents = map (ident . revision . getRevisionInfo) heads
+      i = ident . revision . getRevisionInfo $ head
 
 combineInfo :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
                (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> a -> a -> String

@@ -21,7 +21,7 @@ import Data.Maybe (isJust)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
-import Happstack.Data.IxSet.Revision (revise, merge, Revisable(getRevisionInfo, putRevisionInfo),
+import Happstack.Data.IxSet.Revision (merge, Revisable(getRevisionInfo, putRevisionInfo),
                                       RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
 
@@ -99,22 +99,25 @@ askHeadTriplets scrub i store =
 askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . heads . getIxSet
 
--- |Make this value the new head, creating a suitable revision.
+-- |Create a new revision of an existing element, making the new
+-- |revision the parent and a head.
 reviseElt :: (Store set elt) => (elt -> Maybe elt) -> elt -> set -> Either elt (set, elt)
 reviseElt scrub x store =
-    let xs = getIxSet store
-        rev = revision (getRevisionInfo x)
-        xis = xs @= ident rev
-        (xs', x') = revise xs xis x in
-    case map scrub (toList (xis @= rev)) of 
-      [Just xo] ->
-          if x' == putRevisionInfo (getRevisionInfo x') xo
-          then Left xo
-          else Right (putIxSet xs' store, x')
-      [Nothing] ->
-          error "permission denied"
-      [] -> error ("Not found: " ++ show rev)
-      _ -> error ("duplicate revision: " ++ show rev)
+    case map scrub (toList (set @= oldRev)) of
+      [Just x0] ->
+          if x == putRevisionInfo (getRevisionInfo x) x0
+          then Left (trace " -> No revision necessary" x0)
+          else let (set', x') = merge set [x0] x in
+               Right (putIxSet set' store, (trace (" -> " ++ show (getRevisionInfo x')) x'))
+      [Nothing] -> error (traceString "permission denied")
+      [] ->        error (traceString ("Not found: " ++ show oldRev))
+      _ ->         error (traceString ("duplicate revision: " ++ show oldRev))
+    where
+      oldRev = revision . getRevisionInfo $ x
+      set = getIxSet store
+
+traceString :: String -> String
+traceString s = trace s s
 
 -- |Create a new revision which is the child of several existing
 -- revisions.  In other words, merge several heads into one.  The
@@ -123,12 +126,12 @@ reviseElt scrub x store =
 mergeElts :: (Store set elt) => (elt -> Maybe elt) -> [elt] -> elt -> set -> (set, elt)
 mergeElts scrub parents x store =
     let xs = getIxSet store
-        i = ident (revision (getRevisionInfo x))
-        xis = xs @= i in
+        i = ident (revision (getRevisionInfo x)) in
+        {- xis = xs @= i in -}
     if any (/= i) (map (ident . revision . getRevisionInfo) parents)
     then error "Parent idents don't match merged element"
     else if all isJust (map scrub parents)
-         then let (xs', x') = merge xs xis parents x in (putIxSet xs' store, ({- traceRev "merged:" -} x'))
+         then let (xs', x') = merge xs parents x in (putIxSet xs' store, ({- traceRev "merged:" -} x'))
          else error "Insuffient permissions"
 
 -- Examine the set of head revisions and merge any that are equal.
