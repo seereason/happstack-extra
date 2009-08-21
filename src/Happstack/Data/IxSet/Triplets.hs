@@ -92,17 +92,17 @@ gzipWithM3 :: Monad m
  => GenericQ (GenericQ (GenericM m))
  -> GenericQ (GenericQ (GenericM m))
 gzipWithM3 f x y z =
-   case gmapAccumM perkid funs z of
-     ([], c) -> c
-     _       -> error "gzipWithM3"
- where
- perkid a d = (tail a, unGM (head a) d)
- funs = case gmapAccumQ perkid' funs' y of
-          ([], q) -> q
-          _       -> error "gzipWithM3"
-  where
-   perkid' a d = (tail a, unGQ (head a) d)
-   funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
+    case gmapAccumM perkid funs z of
+      ([], c) -> c
+      _       -> error "gzipWithM3"
+    where
+      perkid a d = (tail a, unGM (head a) d)
+      funs = case gmapAccumQ perkid' funs' y of
+               ([], q) -> q
+               _       -> error "gzipWithM3"
+          where
+            perkid' a d = (tail a, unGQ (head a) d)
+            funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
 type GB = GenericQ (GenericQ (GenericQ Bool))			-- Generic Bool Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Bool
