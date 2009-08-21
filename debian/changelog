@@ -1,6 +1,8 @@
 haskell-happstack-extra (0.59) unstable; urgency=low
 
   * Add Happstack.Data.IxSet.Merge for the threeWayMerge function.
+  * Re-implement Happstack.Data.IxSet.Revision.merge to clarify its meaning
+    and keep it from deleting stuff it shouldn't.
 
  -- David Fox <dsf@seereason.com>  Fri, 21 Aug 2009 09:47:24 -0700
 
