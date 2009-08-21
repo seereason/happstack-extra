@@ -99,6 +99,7 @@ askHeadTriplets scrub i store =
 askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . heads . getIxSet
 
+-- |Make this value the new head, creating a suitable revision.
 reviseElt :: (Store set elt) => (elt -> Maybe elt) -> elt -> set -> Either elt (set, elt)
 reviseElt scrub x store =
     let xs = getIxSet store
@@ -152,8 +153,8 @@ combineElts scrub eq i store =
           let (equal, other) = partition (eq x) xs in
           (traceRevs "eqc:" (x : equal) : (equivs other))
 
-traceRev :: Revisable a => String -> a -> a
-traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
+_traceRev :: Revisable a => String -> a -> a
+_traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 traceRevs :: Revisable a => String -> [a] -> [a]
 traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
                              
@@ -180,7 +181,7 @@ closeRev scrub rev store =
           let xo' = putRevisionInfo ((getRevisionInfo xo) {nodeStatus = NonHead}) xo in
           (putIxSet (insert xo' xs') store, xo')
       [Nothing] -> error "Permission denied"
-      [] -> error ("Not found: " ++ rev)
+      [] -> error ("Not found: " ++ show rev)
       _ -> error "Duplicate revisions"
 
 -- Delete the revision from the store, and anywhere it appears in an

@@ -53,7 +53,7 @@ newtype Ident
 -- | Identifier for a particular revision of a particular item.
 data Revision
     = Revision {ident :: Ident, number :: Integer}
-    deriving (Eq, Ord, Read, Show, Data, Typeable)
+    deriving (Eq, Ord, Read, Data, Typeable)
 
 -- | The information associated with a revision to record its status.
 data RevisionInfo
@@ -61,8 +61,11 @@ data RevisionInfo
     deriving (Eq, Ord, Read, Data, Typeable)
 
 instance Show RevisionInfo where
-    show r = "Rev. " ++ show (unIdent (ident (revision r))) ++ "." ++ show (number (revision r)) ++
-             if nodeStatus r == Head then " (Head)" else ""
+    show r = show (revision r) ++
+             if nodeStatus r == Head then " (Head)" else " (NonHead)"
+
+instance Show Revision where
+    show r = "Rev. " ++ show (unIdent (ident r)) ++ "." ++ show (number r)
 
 data NodeStatus = Head | NonHead deriving (Eq, Ord, Read, Show, Data, Typeable)
 

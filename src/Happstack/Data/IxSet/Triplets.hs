@@ -20,7 +20,7 @@ module Happstack.Data.IxSet.Triplets
 
 import Prelude hiding (GT)
 import Data.Generics
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe)
 
 import Debug.Trace
 
@@ -210,8 +210,8 @@ mergeByM conflict eq original left right =
          else if eq left right then return (Just left)
               else conflict original left right
 
-traceThis :: (a -> String) -> a -> a
-traceThis f x = trace (f x) x
+_traceThis :: (a -> String) -> a -> a
+_traceThis f x = trace (f x) x
 
 {-
 mkP3 :: forall a b c r. (Data a, Data b, Data c) => r -> (a -> a -> a -> r) -> b -> c -> a -> r
