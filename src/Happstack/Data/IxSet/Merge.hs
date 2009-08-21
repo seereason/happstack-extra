@@ -2,6 +2,10 @@
 module Happstack.Data.IxSet.Merge
     ( threeWayMerge
     , threeWayMerge'
+    , mergeEq'
+    , shallowEq'
+    , stringEq'
+    , bsEq'
     ) where
 
 import qualified Data.ByteString as B
@@ -94,14 +98,18 @@ threeWayMerge' o l r =
 
 merge' :: forall a. (Data a) => a -> a -> a -> Maybe a
 -- merge' = mergeBy conflict' mergeEq'
-merge' = mergeBy conflict' mergeEq'
+merge' = mergeBy conflict' mergeEq
 
 conflict' :: PM
 conflict' o l r =
     (gConflict `extT3` bsConflict) o l r
     where
       gConflict :: PM
-      gConflict o l r = trace ("conflict:\n o=" ++ gshow o ++ "\n l=" ++ gshow l ++ "\n r=" ++ gshow r) Nothing
+      gConflict o l r =
+          -- This will make it slow again
+          if geq o l && geq o r
+          then Nothing
+          else trace ("conflict:\n o=" ++ gshow o ++ "\n l=" ++ gshow l ++ "\n r=" ++ gshow r) Nothing
       bsConflict :: B.ByteString -> B.ByteString -> B.ByteString -> Maybe B.ByteString
       bsConflict o l r = trace ("bsConflict:\n o=" ++ show o ++ "\n l=" ++ show l ++ "\n r=" ++ show r) Nothing
 
