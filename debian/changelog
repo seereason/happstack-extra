@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.59) unstable; urgency=low
+
+  * Add Happstack.Data.IxSet.Merge for the threeWayMerge function.
+
+ -- David Fox <dsf@seereason.com>  Fri, 21 Aug 2009 09:47:24 -0700
+
 haskell-happstack-extra (0.58) unstable; urgency=low
 
   * Add a Happstack.Data.User.Permissions module.

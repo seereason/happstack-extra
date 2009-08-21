@@ -38,7 +38,7 @@ import Happstack.Data.IxSet
 --import Text.Formlets.Generics.Markup.Types (Markup(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzip3, gzipBut3, gzipQ3)
+import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3)
 import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 
 -- We need newtypes for each of these so we can make them IxSet
