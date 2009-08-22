@@ -23,7 +23,21 @@ threeWayMerge o l r = gzipBut3 merge continue o l r
 -- |If this function returns Nothing the zip will continue by trying
 -- to zip the individual elements.
 merge :: forall a. (Data a) => a -> a -> a -> Maybe a
-merge = mergeBy conflict mergeEq
+-- merge = mergeBy conflict eqShallow
+merge o l r =
+    if eqShallow o l
+    then Just r
+    else if eqShallow o r
+         then Just l
+         else if eqShallow l r
+              then Just l
+              else if primitive o
+                   then if eqDeep l r then Just l else Nothing
+                   else if primitive l
+                        then if eqDeep o r then Just l else Nothing
+                        else if primitive r
+                             then if eqDeep o l then Just r else Nothing
+                             else Nothing
 
 -- This function is called when a conflict is detected
 conflict :: PM
