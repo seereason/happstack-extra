@@ -6,6 +6,7 @@ module Happstack.Data.IxSet.Triplets
     , gzip3
     , gzipQ3
     , gzipBut3
+    , gzipBut3'
     , extQ2
     , extQ3
     , extT3
@@ -165,6 +166,24 @@ gzipBut3 merge continue x y z =
          `orElse`
            if continue x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
            then gzipWithM3 (gzip3' merge) x y z
+           else Nothing
+
+gzipBut3' :: (Int -> PM) -> (Int -> GB) -> PM
+gzipBut3' merge continue x y z =
+    gzip3' 0 merge' x y z
+    where
+      -- If the three elements aren't all the type of f's arguments,
+      -- this expression will return Nothing.  Also, the f function
+      -- might return Nothing.  In those cases we call gzipWithM3 to
+      -- traverse the sub-elements.
+      merge' :: Int -> GM
+      merge' n x y z = cast x >>= \x' -> cast y >>= \y' -> merge n x' y' z
+      gzip3' :: Int -> (Int -> GM) -> GM
+      gzip3' n merge x y z =
+          merge n x y z
+         `orElse`
+           if continue n x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
+           then gzipWithM3 (gzip3' (n+1) merge) x y z
            else Nothing
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
