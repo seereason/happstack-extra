@@ -15,8 +15,7 @@ import Happstack.Data.IxSet.Triplets (GB, PM, mkQ2, extQ2, extQ3, extT3, gzipQ3,
 import Happstack.Data.IxSet.Revision (NodeStatus)
 
 threeWayMerge :: forall x. (Data x) => x -> x -> x -> Maybe x
-threeWayMerge o l r = gzipBut3 merge continue o l r
-    -- traceThis (\ x -> "3 way merge " ++ if isJust x then "succeeded" else "failed") $ gzipBut3 merge continue o l r
+threeWayMerge o l r = gzipBut3 merge (continue' 0) o l r
 
 -- |If this function returns Nothing the zip will continue by trying
 -- to zip the individual elements.
