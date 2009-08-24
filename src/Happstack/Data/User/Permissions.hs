@@ -9,7 +9,6 @@ module Happstack.Data.User.Permissions
     , writable
     , owns
     , username
-    , unUsername
     , Ownable(..)
     , setCopyPermissions
     , readScrub
@@ -83,9 +82,6 @@ username :: String -> Maybe Username
 username s = case words s of
                [] -> Nothing
                ws -> Just . Username $ intercalate " " ws
-
-unUsername :: Username -> String
-unUsername (Username x) = x
 
 class Ownable a where
     getPermissions :: a -> Maybe Permissions

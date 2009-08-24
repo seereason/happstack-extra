@@ -18,10 +18,10 @@ import Happstack.Data (Default(..))
 import Happstack.Data.User.Password (newPassword)
 import Happstack.Server (ServerMonad, FilterMonad(..),Method(GET, POST), Response,
                      dir, methodM, ok, toResponse, withDataFn,
-                     seeOther, look, anyRequest,
+                     seeOther, look, anyRequest, lookPairs,
                      mkCookie, addCookie, readCookieValue, methodSP)
 import Happstack.Server.Account(AccountData, Create(..), Account(..), UserId(..), Username(..), Authenticate(..))
-import Happstack.Server.Extra (lookPairsUnicode, withURI, withURISP)
+import Happstack.Server.Extra (withURI, withURISP)
 import Happstack.Server.HSP.HTML()
 import Happstack.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), NewSession(..))
 import Happstack.State (query, update)
@@ -47,7 +47,7 @@ account :: forall acct sess m.
         -> String                                       -- ^ The path to the parent serverpart, e.g. "/account"
         -> m Response
 account logInPage makeSess delSess path = msum
-    [withDataFn lookPairsUnicode $ \ pairs ->
+    [withDataFn lookPairs $ \ pairs ->
       -- We expect to see dest=<encoded uri> in the query, that is the
       -- page we go to once we log in successfully.
      let destString = fmap unEscapeString (lookup "dest" pairs)

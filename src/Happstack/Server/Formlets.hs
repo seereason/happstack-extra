@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, PatternGuards, RankNTypes, ScopedTypeVariables #-}
-{-# OPTIONS -Wall -fwarn-missing-signatures -fno-warn-name-shadowing -fwarn-unused-imports #-}
-{-# OPTIONS_GHC -F -pgmFtrhsx #-}
+{-# OPTIONS -F -pgmFtrhsx -Wall -fwarn-missing-signatures -fno-warn-name-shadowing -fno-warn-unused-imports #-}
 module Happstack.Server.Formlets
     ( createForm
     , formletPart
@@ -14,7 +13,8 @@ import Control.Monad (MonadPlus,msum)
 import Control.Monad.Trans (MonadIO(liftIO), MonadTrans(lift))
 import Happstack.Server as Happstack -- (methodSP, methodM, Method(GET, POST), ok, toResponse, withDataFn,
                          -- WebT, Response, ServerPartT(..), anyRequest, notFound, RqData)
-import Happstack.Server.Extra (lookPairsUnicode)
+import Happstack.Server (lookPairs)
+import Happstack.Server.Extra ()
 import Happstack.Server.SimpleHTTP.Extra ()
 import Happstack.State (QueryEvent, query)
 import Data.Generics.SYB.WithClass.Instances ()
@@ -35,7 +35,7 @@ handleForm :: forall a. forall xml1. forall xml2. forall m. forall r. (Monad m) 
            -> ServerPartT m r
 handleForm prefix action page frm handleOk formXML = msum
     [ methodM GET >> ok (page (createForm [] prefix action [] frm formXML))
-    , withDataFn lookPairsUnicode $ \env' ->
+    , withDataFn lookPairs $ \env' ->
         methodSP POST $ anyRequest $
                  do let env = map (second Left) env'
                         (extractor, _, _) = runFormState env prefix frm                        
@@ -75,7 +75,7 @@ formletPart ::
   -> Form xml IO a -- ^ the formlet
   -> XMLGenT m (HSX.XML m)
 formletPart prefix action handleSuccess handleFailure form = 
-        withDataFn lookPairsUnicode $ \env ->
+        withDataFn lookPairs $ \env ->
             let (collector, formXML,_) = runFormState (map (second Left) env) prefix form
             in 
                  msum [ methodSP POST $ XMLGenT $ Happstack.escape . fmap toResponse $ unXMLGenT $ 
