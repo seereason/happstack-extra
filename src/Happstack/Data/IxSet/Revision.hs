@@ -31,7 +31,7 @@ import Data.Generics
 import Data.List (tails, partition, intercalate)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
-import Happstack.Data (Default(..), deriveNewData, deriveSerialize, Migrate(..))
+import Happstack.Data (Default(..), deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
 import Happstack.Data.IxSet
 --import Text.Formlets (xml, check)
 --import Text.Formlets.Generics.Instances ()
@@ -52,15 +52,31 @@ newtype Ident
     = Ident {unIdent :: Integer}
     deriving (Eq, Ord, Read, Show, Data, Typeable)
 
+$(deriveNewData [''Ident])
+
+data NodeStatus = Head | NonHead deriving (Eq, Ord, Read, Show, Data, Typeable)
+
+$(deriveNewData [''NodeStatus])
+
 -- | Identifier for a particular revision of a particular item.
 data Revision
     = Revision {ident :: Ident, number :: Integer}
     deriving (Eq, Ord, Read, Data, Typeable)
 
+$(deriveNewDataNoDefault [''Revision])
+
+instance Default Revision where
+    defaultValue = Revision {ident = defaultValue, number = 1}
+
 -- | The information associated with a revision to record its status.
 data RevisionInfo
     = RevisionInfo {revision :: Revision, parentRevisions :: [Integer], nodeStatus :: NodeStatus}
     deriving (Eq, Ord, Read, Data, Typeable)
+
+$(deriveNewDataNoDefault [''RevisionInfo])
+
+instance Default RevisionInfo where
+    defaultValue = RevisionInfo {revision = defaultValue, parentRevisions = [], nodeStatus = Head}
 
 instance Show RevisionInfo where
     show r = show (revision r) ++
@@ -68,8 +84,6 @@ instance Show RevisionInfo where
 
 instance Show Revision where
     show r = "Rev. " ++ show (unIdent (ident r)) ++ "." ++ show (number r)
-
-data NodeStatus = Head | NonHead deriving (Eq, Ord, Read, Show, Data, Typeable)
 
 -- |Class of values that have a revision info.
 class Revisable a where
@@ -313,11 +327,6 @@ message s x y =
      "\n  commonAncestors -> " ++ intercalate " " (map (showRev . getRevisionInfo) (S.toList (commonAncestors s [x, y]))))
     where rx = getRevisionInfo x
           ry = getRevisionInfo y
-
-$(deriveNewData [''Ident])
-$(deriveNewData [''Revision])
-$(deriveNewData [''NodeStatus])
-$(deriveNewData [''RevisionInfo])
 
 ---------------
 -- MIGRATION --
