@@ -11,8 +11,7 @@ import qualified Data.Generics as G
 import Data.List (replicate)
 import Data.Maybe (isJust)
 import Debug.Trace
-import Happstack.Data.IxSet.Triplets (GB, PM, mkQ2, extQ2, extQ3, extT3, gzipQ3, mergeBy, gzipBut3, gzipBut3')
-import Happstack.Data.IxSet.Revision (NodeStatus)
+import Happstack.Data.IxSet.Triplets (GB, PM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
 
 threeWayMerge :: forall x. (Data x) => x -> x -> x -> Maybe x
 threeWayMerge o l r = gzipBut3 merge (continue' 0) o l r
@@ -86,13 +85,13 @@ threeWayMerge' o l r =
          gzipBut3' (\ n -> merge' n) continue' o l r
 
 merge' :: forall a. (Data a) => Int -> a -> a -> a -> Maybe a
-merge' n o l r =
+merge' _n o l r =
     maybe ({- trace (pre n ++ "merge failed: merge " ++ gshow o ++ " " ++ gshow l ++ " " ++ gshow r ++ " -> Nothing") -} Nothing)
           (\ merged -> {- trace (pre n ++ "merge succeeded: merge " ++ gshow o ++ " " ++ gshow l ++ " " ++ gshow r ++ " -> Just " ++ gshow merged) -} (Just merged))
           (merge o l r)
 
 continue' :: Int -> GB
-continue' n o l r =
+continue' _n o l r =
     case continue o l r of
       True -> True
       False -> trace ("conflict:\n o=" ++ gshow o ++ "\n l=" ++ gshow l ++ "\n r=" ++ gshow r) False
@@ -115,16 +114,19 @@ prim x =
       AlgRep _ | length (gmapQ (const ()) x) > 0 -> False
       _ -> True
 
+gshow' :: forall a. (Data a) => a -> String
 gshow' x = take 100 $ (G.gshow `extQ` bsShow) x
     where
       bsShow :: B.ByteString -> String
       bsShow x = show x
 
+gshow :: forall a. (Data a) => a -> String
 gshow x = (G.gshow `extQ` bsShow) x
     where
       bsShow :: B.ByteString -> String
       bsShow x = show x
 
+pre :: Int -> String
 pre n = replicate n ' '
 
 _tshow :: Data a => a -> String
