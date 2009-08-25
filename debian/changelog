@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.60) unstable; urgency=low
+
+  * Improve the defaultValue of the Revision and RevisionInfo types
+    so we can count on getting revision 1, node status Head, no parents.
+  * Move the entityMap to a separate module, it makes haddock run very
+    slowly.
+
+ -- David Fox <dsf@seereason.com>  Tue, 25 Aug 2009 08:33:06 -0700
+
 haskell-happstack-extra (0.59) unstable; urgency=low
 
   * Add Happstack.Data.IxSet.Merge for the threeWayMerge function.
