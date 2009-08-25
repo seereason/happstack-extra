@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, TemplateHaskell #-}
+{-# LANGUAGE DeriveDataTypeable, MultiParamTypeClasses, TemplateHaskell #-}
 {-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Data.Serialize.Extra where
 

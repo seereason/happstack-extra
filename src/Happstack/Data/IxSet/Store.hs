@@ -17,7 +17,7 @@ module Happstack.Data.IxSet.Store
 
 import Data.Data (Data)
 import Data.List (tails, partition)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, catMaybes)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
@@ -66,7 +66,7 @@ askRev scrub rev store =
       [] -> Nothing
       [Just x] -> Just x
       [Nothing] -> error "permission denied"
-      _ -> error ("duplicate revisions: " ++ show rev)
+      xs -> error ("duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
 askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
@@ -111,7 +111,7 @@ reviseElt scrub x store =
                Right (putIxSet set' store, (trace (" -> " ++ show (getRevisionInfo x')) x'))
       [Nothing] -> error (traceString "permission denied")
       [] ->        error (traceString ("Not found: " ++ show oldRev))
-      _ ->         error (traceString ("duplicate revision: " ++ show oldRev))
+      xs ->         error (traceString ("duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
     where
       oldRev = revision . getRevisionInfo $ x
       set = getIxSet store
@@ -185,7 +185,7 @@ closeRev scrub rev store =
           (putIxSet (insert xo' xs') store, xo')
       [Nothing] -> error "Permission denied"
       [] -> error ("Not found: " ++ show rev)
-      _ -> error "Duplicate revisions"
+      xs -> error ("Duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
 -- Delete the revision from the store, and anywhere it appears in an
 -- element's parent list replace with its parent list.  Return the new

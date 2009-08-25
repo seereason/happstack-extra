@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Merge
     ( threeWayMerge
     , threeWayMerge'

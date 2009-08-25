@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Happstack.Server as Happstack (RqData(..), Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, multi, noopValidator
+import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, multi, noopValidator
                    , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq) 
 import HSP
 import Happstack.Server.HTTP.Types (Input(inputValue))
