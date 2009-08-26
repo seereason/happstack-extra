@@ -50,6 +50,8 @@ instance EmbedAsChild Identity String where
 instance EmbedAsChild Identity XML where
     asChild = XMLGenT . Identity . (:[]) . IChild
 
+instance EmbedAsChild Identity () where
+  asChild () = return []
 
 instance AppendChild Identity XML where
  appAll xml children = do

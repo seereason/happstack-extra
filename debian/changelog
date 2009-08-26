@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.62) unstable; urgency=low
+
+  * Added Happstack.Server.RqData
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 26 Aug 2009 14:38:07 -0500
+
 haskell-happstack-extra (0.61) unstable; urgency=low
 
   * Add code to fix bad revisions, where both a head and a non-head exist
