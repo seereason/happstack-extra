@@ -22,7 +22,7 @@ Exposed-Modules:  HSP.Google.Analytics, HSP.HTML.Extra, HSP.Identity, HSP.Identi
 Build-Depends:    base >= 4, bytestring, containers, html, mtl, network, parsec, random, regex-compat,
                   syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4,
                   happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, happstack,
-                  RJson, Extra >= 1.27, applicative-extras, formlets, feed, xml, pandoc
+                  RJson, Extra >= 1.27, applicative-extras, formlets, feed, xml, pandoc, html-entities
 hs-source-dirs:   src
 
 Build-Type:       Simple
