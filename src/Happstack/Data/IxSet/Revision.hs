@@ -6,17 +6,18 @@ module Happstack.Data.IxSet.Revision
     ( Ident(..)
     , Revision(..)
     , RevisionInfo(..)
+    , changeRevisionInfo
     , RevisionInfo001(..)
     , Revisable(..)
     , NodeStatus(..)
     , copyRev
     , initialRevision
-    , merge
-    , revise
+    -- , merge
+    -- , revise
     , Happstack.Data.IxSet.Revision.prune
     , Heads
     , heads
-    , combine
+    -- , combine
     , combineInfo
     , showRev
     , combine3
@@ -121,24 +122,19 @@ initialRevision newID x =
                                    parentRevisions = [],
                                    nodeStatus = Head}) x
 
-{-
-merge :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a -> Ident -> [a] -> a -> (IxSet a, a)
-merge all i parents merged =
-    if any ((/= Head) . nodeStatus . getRevisionInfo) parents
-    then error "Attempt to merge non-head revision"
-    merge' all i parents merged
--}
-
 -- |Revise is a special case of merge, where we replace a single
 -- element (rather than several) with one new element.
+{-
 revise :: (Revisable a, Ord a, Data a, Indexable a b) => IxSet a -> a -> a -> (IxSet a, a)
 revise all parent revised = merge all [parent] revised
+-}
 
 -- |Insert a revision into the index and designate it the merger of a
 -- list of existing revisions.  The status of the new revision will be
 -- set to Head, the status of the parents set to NonHead.  Note that
 -- this can be used to create a revision (by passing an empty parent
 -- list), revise a single item, or merge several items.
+{-
 merge :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) =>
           IxSet a -> [a] -> a -> (IxSet a, a)
 merge all parents merged =
@@ -159,15 +155,12 @@ merge all parents merged =
       merged' = putRevisionInfo info' merged
       -- Create the new revision info
       info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
-      -- The new revision number is one greater than the greatest
-      -- revision in the head set, or else 1.  FIXME: We are assuming
-      -- that there is no non-head revision greater than the maximum
-      -- head revision.  We actually need to store the maxRevision with
-      -- the report store, as we do maxIdent.
+      -- Get the new revision number from the maxRevs field.
       rev' = rev {number = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList heads))}
           where heads = all @= ident rev @= Head
       parentRevs = map (revision . getRevisionInfo) parents
       rev = revision . getRevisionInfo $ merged
+-}
 
 -- |Remove all the nodes from all which are (1) in s, (2) not heads,
 -- and (3) not common ancestors of heads.  This is a garbage collector
@@ -258,6 +251,7 @@ combine3M conflict eq original left right =
 -- thus an equivalence relation or partition.  We first want to group
 -- the nodes into equivalence classes and then perform the mergers on
 -- the nodes resulting in a single node per equivalence class.
+{-
 combine :: forall a b. (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
            (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> (IxSet a, [a])
 combine _ all [] = (all, [])
@@ -290,6 +284,7 @@ combine eq set heads@(head : _) =
       unRev x = putRevisionInfo defaultValue x
       idents = map (ident . revision . getRevisionInfo) heads
       i = ident . revision . getRevisionInfo $ head
+-}
 
 combineInfo :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
                (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> a -> a -> String

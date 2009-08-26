@@ -2,10 +2,13 @@
 -- |Abstracted database queries and updates on IxSets of Revisable elements.
 module Happstack.Data.IxSet.Store
     ( Store(..)
+    , getMaxRev
+    , putMaxRev
     , Triplet(..)
     , getNextId
     , askHeads
     , askRev
+    , askAllRevs
     , askHeadTriplets
     , askAllHeads
     , reviseElt
@@ -13,17 +16,21 @@ module Happstack.Data.IxSet.Store
     , combineElts
     , deleteRev
     , closeRev
+    , merge
+    , fixBadRevs
     ) where
 
 import Data.Data (Data)
-import Data.List (tails, partition)
+import Data.Function (on)
+import Data.List (tails, partition, groupBy, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (isJust, catMaybes)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
-import Happstack.Data.IxSet.Revision (merge, Revisable(getRevisionInfo, putRevisionInfo),
-                                      RevisionInfo(revision, parentRevisions), Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
+import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo),
+                                      RevisionInfo(RevisionInfo, revision, parentRevisions), changeRevisionInfo,
+                                      Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
 
 import Debug.Trace
@@ -35,6 +42,19 @@ class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | se
     putMaxRevs :: M.Map Ident Integer -> set -> set
     getIxSet :: set -> IxSet elt
     putIxSet :: IxSet elt -> set -> set
+
+putMaxRev :: Store set elt => Ident -> Integer -> set -> set
+putMaxRev ident rev s = putMaxRevs (M.insert ident rev (getMaxRevs s)) s
+
+getMaxRev :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> Integer
+getMaxRev ident s = 
+    maybe getMaxRev' id (M.lookup ident (getMaxRevs s))
+    where
+      -- Look at all revisions - could be expensive
+      getMaxRev' :: Integer
+      getMaxRev' = foldr f 0 (toList (getIxSet s @= ident))
+      f :: elt -> Integer -> Integer
+      f x rev = max rev (number . revision . getRevisionInfo $ x)
 
 $(deriveAll [''Eq, ''Ord, ''Read, ''Show]
   [d|
@@ -60,6 +80,13 @@ askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
     let xis = (getIxSet store) @= i in
     case map scrub (heads xis) of
+      [] -> error $ "AskHeads - no head: " ++ show (map getRevisionInfo (toList xis))
+      xs -> xs
+
+askAllRevs :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askAllRevs scrub i store =
+    let xis = (getIxSet store) @= i in
+    case map scrub (toList xis) of
       [] -> error $ "AskHeads - no head: " ++ show (map getRevisionInfo (toList xis))
       xs -> xs
 
@@ -110,8 +137,8 @@ reviseElt scrub x store =
       [Just x0] ->
           if x == putRevisionInfo (getRevisionInfo x) x0
           then Left (trace " -> No revision necessary" x0)
-          else let (set', x') = merge set [x0] x in
-               Right (putIxSet set' store, (trace (" -> " ++ show (getRevisionInfo x')) x'))
+          else let (store', x') = merge store [x0] x in
+               Right (store', (trace (" -> " ++ show (getRevisionInfo x')) x'))
       [Nothing] -> error (traceString "reviseElt: permission denied")
       [] ->        error (traceString ("reviseElt: Not found: " ++ show oldRev))
       xs ->         error (traceString ("reviseElt: duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
@@ -128,13 +155,11 @@ traceString s = trace s s
 -- parent elements.
 mergeElts :: (Store set elt) => (elt -> Maybe elt) -> [elt] -> elt -> set -> (set, elt)
 mergeElts scrub parents x store =
-    let xs = getIxSet store
-        i = ident (revision (getRevisionInfo x)) in
-        {- xis = xs @= i in -}
+    let i = ident (revision (getRevisionInfo x)) in
     if any (/= i) (map (ident . revision . getRevisionInfo) parents)
     then error "Parent idents don't match merged element"
     else if all isJust (map scrub parents)
-         then let (xs', x') = merge xs parents x in (putIxSet xs' store, ({- traceRev "merged:" -} x'))
+         then merge store parents x
          else error "Insuffient permissions"
 
 -- Examine the set of head revisions and merge any that are equal.
@@ -231,3 +256,78 @@ deleteRev scrub rev store =
 heads :: (Data a, Indexable a (), Revisable a, Ord a) => IxSet a -> [a]
 heads s = toList (s @= Head)
 -- heads s = filter ((== Head) . nodeStatus . getRevisionInfo) . toList $ s
+
+-- |Insert a revision into the index and designate it the merger of a
+-- list of existing revisions.  The status of the new revision will be
+-- set to Head, the status of the parents set to NonHead.  Note that
+-- this can be used to create a revision (by passing an empty parent
+-- list), revise a single item, or merge several items.
+merge :: forall set elt. (Store set elt, Indexable elt ()) => set -> [elt] -> elt -> (set, elt)
+merge store parents merged =
+    if any (/= i) parentIds
+    then error $ "merge: ident mismatch: merged=" ++ show i ++ ", parents=" ++ show parentIds
+    else (store', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
+    where
+      store' = putIxSet set' store 
+      set' = insert merged' (foldr unHead set parents)
+      set = getIxSet store
+      merged' = putRevisionInfo info' merged
+      info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
+      rev' = rev {number = 1 + getMaxRev i store}
+      parentIds = map ident parentRevs
+      parentRevs = map (revision . getRevisionInfo) parents
+      i = ident rev
+      rev = revision . getRevisionInfo $ merged
+      unHead :: elt -> IxSet elt -> IxSet elt
+      unHead x xs = insert x' (delete x xs)
+          where x' = putRevisionInfo (f (getRevisionInfo x)) x
+                f :: RevisionInfo -> RevisionInfo
+                f x = x {nodeStatus = NonHead}
+
+{-
+merge :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) =>
+          IxSet a -> [a] -> a -> (IxSet a, a)
+merge all parents merged =
+    if any (/= ident rev) (map ident parentRevs)
+    then error $ "merge: ident mismatch: merged=" ++ show (ident rev) ++ ", parents=" ++ show parentRevs
+    else (all'', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
+    where
+      -- Add the final version of the merged element to the set
+      all'' = insert merged' all'
+      all' = foldr unHead all parents
+      unHead :: a -> IxSet a -> IxSet a
+      unHead x xs = insert x' (delete x xs)
+          where x' :: a
+                x' = changeRevisionInfo f x
+                f :: RevisionInfo -> RevisionInfo
+                f x = x {nodeStatus = NonHead}
+      -- Put the new revision info into the merged element
+      merged' = putRevisionInfo info' merged
+      -- Create the new revision info
+      info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
+      -- Get the new revision number from the maxRevs field.
+      rev' = rev {number = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList heads))}
+          where heads = all @= ident rev @= Head
+      parentRevs = map (revision . getRevisionInfo) parents
+      rev = revision . getRevisionInfo $ merged
+-}
+
+fixBadRevs :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> set
+fixBadRevs i store =
+    foldr repair store (concat bad)
+    where 
+      repair x store =
+          let rev = 1 + getMaxRev i store in
+          let store' = putMaxRev i rev store in
+          let info = getRevisionInfo x in
+          let info' = info {revision = (revision info) {number = rev}, nodeStatus = Head} in
+          let x' = putRevisionInfo (trace ("Changing revision from " ++ show info ++ " to " ++ show info') info') x in
+          let ix = getIxSet store' in
+          let ix' = insert x' (delete x ix) in
+          let store'' = putIxSet ix' store' in
+          store''
+      bad = filter (\ g -> length g > 1) 
+                (groupBy ((==) `on` (number . revision . getRevisionInfo))
+                 (sortBy (compare `on` (number . revision . getRevisionInfo)) revs))
+      revs = toList (set @= i)
+      set = getIxSet store
