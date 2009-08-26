@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, MultiParamTypeClasses, TemplateHaskell #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, OverlappingInstances, TemplateHaskell, UndecidableInstances #-}
 {-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Data.Serialize.Extra where
 

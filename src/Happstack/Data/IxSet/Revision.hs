@@ -146,7 +146,7 @@ merge all parents merged =
     then error $ "merge: ident mismatch: merged=" ++ show (ident rev) ++ ", parents=" ++ show parentRevs
     else (all'', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
     where
-      -- Add the 
+      -- Add the final version of the merged element to the set
       all'' = insert merged' all'
       all' = foldr unHead all parents
       unHead :: a -> IxSet a -> IxSet a

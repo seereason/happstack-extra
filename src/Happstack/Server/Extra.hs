@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
+{-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Server.Extra 
     ( debug404
     , prettyRequest
@@ -7,25 +8,27 @@ module Happstack.Server.Extra
     , withURI
     , withURISP
     , lookPairsPacked
+    , lookPairsUnicode
     ) where
 
 import Control.Applicative
 import Control.Arrow ((***))
-import Control.Monad(msum)
+--import Control.Monad(msum)
 import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as U
-import Data.Char (chr)
+--import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, multi, noopValidator
-                   , notFound, setValidator, toResponse, withRequest, rqURL, runServerPartT, askRq) 
+import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, noopValidator
+                   , notFound, setValidator, toResponse, withRequest) 
 import HSP
 import Happstack.Server.HTTP.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
-import Text.Regex (mkRegexWithOpts, matchRegexAll)
+import Text.Html.Entities (utf8ToUnicode)
+--import Text.Regex (mkRegexWithOpts, matchRegexAll)
 
 -- |a 404 page which shows the failed Request as Html
 debug404 :: (FilterMonad Response m, ServerMonad m, Monad m) => m Response
@@ -84,6 +87,12 @@ withURISP f = askRq >>= \request ->
 -- |A version of Happstack lookPairs that doesn't unpack its values.
 lookPairsPacked :: RqData [(String,L.ByteString)]
 lookPairsPacked = asks fst >>= return . map (\ (n,vbs) -> (n, inputValue vbs))
+
+-- |Interpret the packed string returned from the server as UTF8
+-- (which it is) and convert it to unicode.
+lookPairsUnicode :: RqData [(String,String)]
+lookPairsUnicode = 
+    asks fst >>= return . map (\ (n,vbs) -> (n, utf8ToUnicode (inputValue vbs)))
 
 -- * Simple Applicative and Alternative instances for RqData via ReaderT
 instance (Monad m) => Applicative (ReaderT r m) where

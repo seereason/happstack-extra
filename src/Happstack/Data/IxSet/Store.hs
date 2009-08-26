@@ -17,6 +17,7 @@ module Happstack.Data.IxSet.Store
 
 import Data.Data (Data)
 import Data.List (tails, partition)
+import qualified Data.Map as M
 import Data.Maybe (isJust, catMaybes)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
@@ -30,6 +31,8 @@ import Debug.Trace
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
     getMaxId :: set -> Ident
     putMaxId :: Ident -> set -> set
+    getMaxRevs :: set -> M.Map Ident Integer
+    putMaxRevs :: M.Map Ident Integer -> set -> set
     getIxSet :: set -> IxSet elt
     putIxSet :: IxSet elt -> set -> set
 
@@ -65,8 +68,8 @@ askRev scrub rev store =
     case map scrub (toList (getIxSet store @= rev)) of
       [] -> Nothing
       [Just x] -> Just x
-      [Nothing] -> error "permission denied"
-      xs -> error ("duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
+      [Nothing] -> error "askRev: permission denied"
+      xs -> error ("askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
 askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
@@ -109,9 +112,9 @@ reviseElt scrub x store =
           then Left (trace " -> No revision necessary" x0)
           else let (set', x') = merge set [x0] x in
                Right (putIxSet set' store, (trace (" -> " ++ show (getRevisionInfo x')) x'))
-      [Nothing] -> error (traceString "permission denied")
-      [] ->        error (traceString ("Not found: " ++ show oldRev))
-      xs ->         error (traceString ("duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
+      [Nothing] -> error (traceString "reviseElt: permission denied")
+      [] ->        error (traceString ("reviseElt: Not found: " ++ show oldRev))
+      xs ->         error (traceString ("reviseElt: duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
     where
       oldRev = revision . getRevisionInfo $ x
       set = getIxSet store
