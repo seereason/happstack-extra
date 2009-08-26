@@ -43,6 +43,7 @@ class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | se
     getIxSet :: set -> IxSet elt
     putIxSet :: IxSet elt -> set -> set
 
+-- FIXME - we need a safer way to increase and use the max rev, like getNextId
 putMaxRev :: Store set elt => Ident -> Integer -> set -> set
 putMaxRev ident rev s = putMaxRevs (M.insert ident rev (getMaxRevs s)) s
 
@@ -268,7 +269,7 @@ merge store parents merged =
     then error $ "merge: ident mismatch: merged=" ++ show i ++ ", parents=" ++ show parentIds
     else (store', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
     where
-      store' = putIxSet set' store 
+      store' = putMaxRev i (number rev') (putIxSet set' store)
       set' = insert merged' (foldr unHead set parents)
       set = getIxSet store
       merged' = putRevisionInfo info' merged

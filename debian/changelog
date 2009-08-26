@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.61) unstable; urgency=low
+
+  * Add code to fix bad revisions, where both a head and a non-head exist
+  * Use new MaxRevs map of the Store class
+  * Improve merge so it uses MaxRev
+
+ -- David Fox <dsf@seereason.com>  Wed, 26 Aug 2009 09:08:02 -0700
+
 haskell-happstack-extra (0.60) unstable; urgency=low
 
   * Improve the defaultValue of the Revision and RevisionInfo types
