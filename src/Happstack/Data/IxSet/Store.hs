@@ -25,7 +25,6 @@ import Data.Function (on)
 import Data.List (tails, groupBy, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (isJust, catMaybes)
-import Extra.Trace (traceThis)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
@@ -36,6 +35,8 @@ import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo
 import Happstack.State (Version)
 
 import Debug.Trace
+
+traceThis f x = trace (f x) x
 
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
     getMaxId :: set -> Ident
