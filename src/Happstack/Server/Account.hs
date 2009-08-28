@@ -134,7 +134,7 @@ changePassword username oldPass newPw _ =
     do (Accounts nextId accountIxSet) <- get
        case (getOne (accountIxSet @= username)) of
          Nothing -> return (Left "No such user name")
-         Just acct@(Account u i pw d) ->
+         Just (Account u i pw d) ->
              case checkPassword pw oldPass of
                True -> put (Accounts nextId (updateIx u (Account u i newPw d) accountIxSet)) >> return (Right ())
                False -> return (Left "Invalid password")

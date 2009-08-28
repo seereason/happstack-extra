@@ -21,17 +21,17 @@ module Happstack.Server.Session
     where
 
 import Control.Applicative ((<$>),optional)
-import Control.Monad (MonadPlus)
-import Control.Monad.Error (MonadIO)
+--import Control.Monad (MonadPlus)
+--import Control.Monad.Error (MonadIO)
 import Control.Monad.State hiding (State)
 import Control.Monad.Reader (ask)
 import Data.Generics (Data)
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (isNothing)
 import Happstack.Data (Default, deriveAll, gFind')
 import Happstack.Data.IxSet (Indexable(..), (@=), delete, getOne, inferIxSet, noCalcs, updateIx)
 import Happstack.Data.IxSet.Extra (testAndInsert)
 import Happstack.State (Serialize, Version, Query, Update, deriveSerialize, getRandom, mkMethods, query)
-import Happstack.Server (ServerMonad, ServerPartT(..), WebT(..), anyRequest, withDataFn, readCookieValue)
+import Happstack.Server (ServerMonad, withDataFn, readCookieValue)
 import Happstack.Server.Extra ()
 
 class (Ord s, Serialize s, Data s, Default s) => SessionData s

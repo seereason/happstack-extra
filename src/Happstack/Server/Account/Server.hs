@@ -9,7 +9,7 @@ module Happstack.Server.Account.Server
 
 import Control.Monad(MonadPlus, msum)
 import Control.Monad.State ()
-import Control.Monad.Trans (lift, MonadIO(liftIO))
+import Control.Monad.Trans (MonadIO(liftIO))
 --import Data.Generics (Data(..))
 import Extra.URI (URI(..), parseURI, parseRelativeReference, relURI, setURIQueryAttr, unEscapeString)
 import HSP.XML (XML)
@@ -18,10 +18,10 @@ import Happstack.Data (Default(..))
 import Happstack.Data.User.Password (newPassword)
 import Happstack.Server (ServerMonad, FilterMonad(..),Method(GET, POST), Response,
                      dir, methodM, ok, toResponse, withDataFn,
-                     seeOther, look, anyRequest, lookPairs,
+                     seeOther, look, lookPairs,
                      mkCookie, addCookie, readCookieValue, methodSP)
 import Happstack.Server.Account(AccountData, Create(..), Account(..), UserId(..), Username(..), Authenticate(..))
-import Happstack.Server.Extra (withURI, withURISP)
+import Happstack.Server.Extra (withURISP)
 import Happstack.Server.HSP.HTML()
 import Happstack.Server.Session(SessionData, SessionId(..), Session(..), GetSession(..), DelSession(..), NewSession(..))
 import Happstack.State (query, update)
@@ -74,7 +74,7 @@ signUpDirName = "signUp"
 -- tries to create a new account.
 handleSignUp :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, AccountData a, SessionData s) =>
                 (String -> UserId -> a -> s) -> a -> URI -> Maybe String -> m Response
-handleSignUp makeSess defAcct dest alert =
+handleSignUp makeSess defAcct dest _alert =
     dir signUpDirName $
       methodSP POST $
         (withDataFn (do u  <- look "newusername"
@@ -104,7 +104,7 @@ handleSignIn :: (MonadPlus m, MonadIO m, AccountData a, SessionData s, ServerMon
 handleSignIn makeSess dest =
     dir signInDirName $
       methodSP POST $
-        withURISP $ \here ->
+        withURISP $ \ _here ->
             withDataFn (do u <- (look "username")
                            p <- (look "password")
                            return (u, p)
@@ -120,7 +120,7 @@ signOutDirName = "signOut"
 
 handleSignOut :: (MonadIO m, FilterMonad Response m, ServerMonad m, MonadPlus m, SessionData sess) =>
            (SessionId -> DelSession sess) -> URI -> SessionId -> m Response
-handleSignOut delSess dest sID =
+handleSignOut delSess dest _sID =
     withDataFn (readCookieValue "sessionId") $ \sID ->
       dir signOutDirName $
         do update (delSess sID)

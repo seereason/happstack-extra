@@ -8,11 +8,11 @@ module Happstack.Data.IxSet.Merge
 import qualified Data.ByteString as B
 import Data.Data (Data, toConstr)
 import Data.Generics (DataRep(AlgRep), dataTypeRep, dataTypeOf, gmapQ, extQ)
-import qualified Data.Generics as G
-import Data.List (replicate)
+import qualified Data.Generics as G (geq, gshow)
+--import Data.List (replicate)
 import Data.Maybe (isJust)
 import Debug.Trace
-import Happstack.Data.IxSet.Triplets (GB, PM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
+import Happstack.Data.IxSet.Triplets (GB, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
 
 threeWayMerge :: forall x. (Data x) => x -> x -> x -> Maybe x
 threeWayMerge o l r = gzipBut3 merge (continue' 0) o l r
@@ -38,8 +38,8 @@ merge o l r =
 
 -- This function is called when a potential conflict is detected - the
 -- shallow tests have all returned false.
-conflict :: PM
-conflict _ _ _ = Nothing
+--conflict :: PM
+--conflict _ _ _ = Nothing
 
 -- We stop the traversal if the constructors don't
 -- match, or if we encounter other values which we
@@ -115,11 +115,11 @@ prim x =
       AlgRep _ | length (gmapQ (const ()) x) > 0 -> False
       _ -> True
 
-gshow' :: forall a. (Data a) => a -> String
-gshow' x = take 100 $ (G.gshow `extQ` bsShow) x
-    where
-      bsShow :: B.ByteString -> String
-      bsShow x = show x
+--gshow' :: forall a. (Data a) => a -> String
+--gshow' x = take 100 $ (gshow `extQ` bsShow) x
+--    where
+--      bsShow :: B.ByteString -> String
+--      bsShow x = show x
 
 gshow :: forall a. (Data a) => a -> String
 gshow x = (G.gshow `extQ` bsShow) x
@@ -127,8 +127,8 @@ gshow x = (G.gshow `extQ` bsShow) x
       bsShow :: B.ByteString -> String
       bsShow x = show x
 
-pre :: Int -> String
-pre n = replicate n ' '
+_pre :: Int -> String
+_pre n = replicate n ' '
 
 _tshow :: Data a => a -> String
 _tshow x = show (dataTypeRep (dataTypeOf x))

@@ -1,7 +1,7 @@
 module Happstack.State.Extra where
 
 import Control.Exception
-import Control.Monad.Trans(MonadIO(liftIO))
+--import Control.Monad.Trans(MonadIO(liftIO))
 import Happstack.State
 
 -- |execute 'action' with the state transaction system running

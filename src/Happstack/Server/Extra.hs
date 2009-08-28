@@ -16,7 +16,7 @@ import Control.Arrow ((***))
 --import Control.Monad(msum)
 import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as L
+--import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as U
 --import Data.Char (chr)
 import qualified Data.Map as Map
@@ -85,7 +85,7 @@ withURISP f = askRq >>= \request ->
         in f uri
 
 -- |A version of Happstack lookPairs that doesn't unpack its values.
-lookPairsPacked :: RqData [(String,L.ByteString)]
+lookPairsPacked :: RqData [(String, U.ByteString)]
 lookPairsPacked = asks fst >>= return . map (\ (n,vbs) -> (n, inputValue vbs))
 
 -- |Interpret the packed string returned from the server as UTF8

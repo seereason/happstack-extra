@@ -29,7 +29,7 @@ import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo),
-                                      RevisionInfo(RevisionInfo, revision, parentRevisions), changeRevisionInfo,
+                                      RevisionInfo(RevisionInfo, revision, parentRevisions),
                                       Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
 
