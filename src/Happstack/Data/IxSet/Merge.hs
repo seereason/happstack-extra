@@ -2,6 +2,7 @@
 {-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Merge
     ( threeWayMerge
+    , twoOrThreeWayMerge
     , threeWayMerge'
     ) where
 
@@ -13,6 +14,10 @@ import qualified Data.Generics as G (geq, gshow)
 import Data.Maybe (isJust)
 import Debug.Trace
 import Happstack.Data.IxSet.Triplets (GB, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
+
+twoOrThreeWayMerge :: forall x. (Data x) => (Maybe x) -> x -> x -> Maybe x
+twoOrThreeWayMerge Nothing _ _ = error "Unimplemented: two way merge"
+twoOrThreeWayMerge (Just o) l r = threeWayMerge o l r
 
 threeWayMerge :: forall x. (Data x) => x -> x -> x -> Maybe x
 threeWayMerge o l r = gzipBut3 merge (continue' 0) o l r

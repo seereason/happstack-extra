@@ -22,11 +22,13 @@ module Happstack.Data.IxSet.Store
 
 import Data.Data (Data)
 import Data.Function (on)
-import Data.List (tails, partition, groupBy, sortBy)
+import Data.List (tails, groupBy, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (isJust, catMaybes)
+import Extra.Trace (traceThis)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), toList, delete, insert)
+import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo),
                                       RevisionInfo(RevisionInfo, revision, parentRevisions),
@@ -104,7 +106,7 @@ askHeadTriplets scrub i store =
     let xis = (getIxSet store) @= i in
     case toList (xis @= Head) of
       [] -> []
-      rs -> triples (\ x y -> commonAncestor xis x y) (traceRevs "heads:" rs)
+      rs -> triples (\ x y -> commonAncestor xis x y) rs
     where
       triples g xs = concatMap f (tails xs)
           where
@@ -160,47 +162,40 @@ mergeElts scrub parents x store =
     if any (/= i) (map (ident . revision . getRevisionInfo) parents)
     then error "Parent idents don't match merged element"
     else if all isJust (map scrub parents)
-         then merge store parents x
+         then traceThis (\ (_, m) -> "mergeElts " ++ show (map getRevisionInfo parents) ++ " -> " ++ show (getRevisionInfo m))
+                  (merge store parents x)
          else error "Insuffient permissions"
 
--- Examine the set of head revisions and merge any that are equal.
--- Return the new set of heads.
-combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> elt -> Bool) -> Ident -> set -> Either [elt] (set, [elt])
-combineElts scrub eq i store =
-    let xs = getIxSet (store :: set)
-        xis = toList ((xs @= i) @= Head)
-        (eqcs, singles) = partition (\ xs -> length xs > 1) (equivs xis) in
-    case foldr f (store, []) eqcs of
-      (_, []) -> Left (concat singles)
-      (store', merged) -> Right (store', merged ++ concat singles)
+-- Examine the set of head revisions and attempt to merge as many as
+-- possible using the automatic threeWayMerge function.
+combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
+combineElts readScrub writeScrub i set =
+    merge False set (askHeadTriplets readScrub i set)
     where
-      f :: [elt] -> (set, [elt]) -> (set, [elt])
-      -- Build the new store, and the list of newly added elements.
-      f eqc (store, merged) =
-          (store', (trace ("adding to list of combined heads: " ++ show (getRevisionInfo new)) new : merged))
-          where (store', new) = mergeElts scrub (trace ("combine: " ++ show (map getRevisionInfo eqc)) eqc) (head eqc) store
-      equivs :: [elt] -> [[elt]]
-      equivs [] = []
-      equivs (x : xs) =
-          let (equal, other) = partition (eq x) xs in
-          (traceRevs "eqc:" (x : equal) : (equivs other))
+      -- No triplets to merge, 
+      merge :: Bool -> set -> [Maybe (Triplet elt)] -> Either [elt] (set, [elt])
+      merge merged set [] =
+          let heads = toList ((getIxSet set @= i) @= Head) in
+          if merged then Right (set, heads) else Left heads
+      -- Try to merge each of the triplets in turn
+      merge merged set (Just (Triplet o l r) : more) =
+          let copyRev s d = putRevisionInfo (getRevisionInfo s) d
+              o' = maybe Nothing (Just . copyRev l) o
+              r' = copyRev l r in
+          case traceThis (\ m -> "threeWayMerge " ++ show [fmap getRevisionInfo o, Just (getRevisionInfo l), Just (getRevisionInfo r)] ++ " -> " ++ show (fmap getRevisionInfo m))
+                   (twoOrThreeWayMerge o' l r') of
+            -- We merged a triplet, set the merged flag and re-start the combine process
+            Just m -> let (set', _) = mergeElts writeScrub [l, r] m set in
+                      merge True set' (askHeadTriplets readScrub i set)
+            -- We couldn't merge a triplet, try the next
+            Nothing -> merge merged set more
+      -- Permission failure
+      merge merged set (Nothing : more) = merge merged set more
 
 _traceRev :: Revisable a => String -> a -> a
 _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
-traceRevs :: Revisable a => String -> [a] -> [a]
-traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
-                             
-{-
-    case map scrub (toList (xis @= rev)) of 
-      [Just xo] ->
-          if x' == putRevisionInfo (getRevisionInfo x') xo
-          then Left xo
-          else Right (putIxSet xs' store, x')
-      [Nothing] ->
-          error "permission denied"
-      [] -> error "not found"
-      _ -> error ("duplicate revision: " ++ show rev)
--}
+_traceRevs :: Revisable a => String -> [a] -> [a]
+_traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
 
 closeRev :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> (set, elt)
 closeRev scrub rev store =
@@ -284,34 +279,6 @@ merge store parents merged =
           where x' = putRevisionInfo (f (getRevisionInfo x)) x
                 f :: RevisionInfo -> RevisionInfo
                 f x = x {nodeStatus = NonHead}
-
-{-
-merge :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) =>
-          IxSet a -> [a] -> a -> (IxSet a, a)
-merge all parents merged =
-    if any (/= ident rev) (map ident parentRevs)
-    then error $ "merge: ident mismatch: merged=" ++ show (ident rev) ++ ", parents=" ++ show parentRevs
-    else (all'', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
-    where
-      -- Add the final version of the merged element to the set
-      all'' = insert merged' all'
-      all' = foldr unHead all parents
-      unHead :: a -> IxSet a -> IxSet a
-      unHead x xs = insert x' (delete x xs)
-          where x' :: a
-                x' = changeRevisionInfo f x
-                f :: RevisionInfo -> RevisionInfo
-                f x = x {nodeStatus = NonHead}
-      -- Put the new revision info into the merged element
-      merged' = putRevisionInfo info' merged
-      -- Create the new revision info
-      info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
-      -- Get the new revision number from the maxRevs field.
-      rev' = rev {number = 1 + foldr max 0 (map (number . revision . getRevisionInfo) (toList heads))}
-          where heads = all @= ident rev @= Head
-      parentRevs = map (revision . getRevisionInfo) parents
-      rev = revision . getRevisionInfo $ merged
--}
 
 fixBadRevs :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> set
 fixBadRevs i store =

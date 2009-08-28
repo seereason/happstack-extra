@@ -80,11 +80,12 @@ instance Default RevisionInfo where
     defaultValue = RevisionInfo {revision = defaultValue, parentRevisions = [], nodeStatus = Head}
 
 instance Show RevisionInfo where
-    show r = show (revision r) ++
-             if nodeStatus r == Head then " (Head)" else " (NonHead)"
+    show r = "(" ++ show (revision r) ++
+             (if nodeStatus r == Head then " (Head)" else " (NonHead)") ++
+             " parents: " ++ show (parentRevisions r) ++ ")"
 
 instance Show Revision where
-    show r = "Rev. " ++ show (unIdent (ident r)) ++ "." ++ show (number r)
+    show r = show (unIdent (ident r)) ++ "." ++ show (number r)
 
 -- |Class of values that have a revision info.
 class Revisable a where
