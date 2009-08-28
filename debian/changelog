@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.63) unstable; urgency=low
+
+  * Re-implementaiton of combineElts to do three way merges
+
+ -- David Fox <dsf@seereason.com>  Fri, 28 Aug 2009 08:07:59 -1000
+
 haskell-happstack-extra (0.62) unstable; urgency=low
 
   * Added Happstack.Server.RqData
