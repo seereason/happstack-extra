@@ -15,7 +15,7 @@ module Happstack.Data.IxSet.Store
     , mergeElts
     , combineElts
     , deleteRev
-    , closeRev
+    , setStatus
     , merge
     , fixBadRevs
     ) where
@@ -198,15 +198,15 @@ _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 _traceRevs :: Revisable a => String -> [a] -> [a]
 _traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
 
-closeRev :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> (set, elt)
-closeRev scrub rev store =
+setStatus :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> NodeStatus -> Revision -> set -> (set, elt)
+setStatus scrub status rev store =
     let xs = getIxSet store :: IxSet elt
         xis = xs @= ident rev :: IxSet elt
         xos = (toList $ xis @= rev) :: [elt] in
     case map scrub xos of
       [Just xo] -> 
           let xs' = delete xo xs in
-          let xo' = putRevisionInfo ((getRevisionInfo xo) {nodeStatus = NonHead}) xo in
+          let xo' = putRevisionInfo ((getRevisionInfo xo) {nodeStatus = status}) xo in
           (putIxSet (insert xo' xs') store, xo')
       [Nothing] -> error "Permission denied"
       [] -> error ("Not found: " ++ show rev)
