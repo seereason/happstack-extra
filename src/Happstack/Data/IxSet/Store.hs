@@ -36,6 +36,7 @@ import Happstack.State (Version)
 
 import Debug.Trace
 
+traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
 
 class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
@@ -82,23 +83,23 @@ getNextId x =
 
 askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
-    let xis = (getIxSet store) @= i in
-    case map scrub (heads xis) of
-      [] -> error $ "AskHeads - no head: " ++ show (map getRevisionInfo (toList xis))
-      xs -> xs
+    let xis = (getIxSet store) @= (trace ("askHeads " ++ show i) i) @= Head in
+    case map scrub (toList xis) of
+      [] -> error $ "askHeads - no head: " ++ show (map getRevisionInfo (toList xis))
+      xs -> trace ("askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
-askAllRevs :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askAllRevs :: (Store set elt, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askAllRevs scrub i store =
     let xis = (getIxSet store) @= i in
     case map scrub (toList xis) of
-      [] -> error $ "AskHeads - no head: " ++ show (map getRevisionInfo (toList xis))
-      xs -> xs
+      [] -> error $ "askAllRevs - no head: " ++ show (map getRevisionInfo (toList xis))
+      xs -> trace ("askAllRevs -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
 askRev :: (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Maybe elt
 askRev scrub rev store =
-    case map scrub (toList (getIxSet store @= rev)) of
-      [] -> Nothing
-      [Just x] -> Just x
+    case map scrub (toList (getIxSet store @= (trace ("askRev " ++ show rev) rev))) of
+      [] -> trace "askRev -> Nothing" Nothing
+      [Just x] -> Just (trace ("askRev -> " ++ show (getRevisionInfo x)) x)
       [Nothing] -> error "askRev: permission denied"
       xs -> error ("askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
