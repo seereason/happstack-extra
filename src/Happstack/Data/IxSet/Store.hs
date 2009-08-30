@@ -83,7 +83,7 @@ getNextId x =
 
 askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
-    let xis = (getIxSet store) @= (trace ("askHeads " ++ show i) i) @= Head in
+    let xis = (getIxSet store) @= Head @= (trace ("askHeads " ++ show i) i) in
     case map scrub (toList xis) of
       [] -> error $ "askHeads - no head: " ++ show (map getRevisionInfo (toList xis))
       xs -> trace ("askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
