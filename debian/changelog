@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.64) unstable; urgency=low
+
+  * Replace reviseElt with reviseAndMerge in Happstack.Data.IxSet.Store.
+
+ -- David Fox <dsf@seereason.com>  Mon, 31 Aug 2009 09:59:39 -0700
+
 haskell-happstack-extra (0.63) unstable; urgency=low
 
   * Re-implementaiton of combineElts to do three way merges
