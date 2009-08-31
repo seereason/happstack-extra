@@ -12,6 +12,7 @@ import Control.Monad.State ()
 import Control.Monad.Trans (MonadIO(liftIO))
 --import Data.Generics (Data(..))
 import Extra.URI (URI(..), parseURI, parseRelativeReference, relURI, setURIQueryAttr, unEscapeString)
+import qualified Extra.URIQuery as Q
 import HSP.XML (XML)
 import HSP (HSP, evalHSP)
 import Happstack.Data (Default(..))
@@ -89,12 +90,11 @@ handleSignUp makeSess defAcct dest _alert =
                     -- FIXME: This should have more error conditions
                     r <- update $ Create (Username u) pw defAcct
                     case r of
-                      Left error -> seeOther (setURIQueryAttr "dest" (show dest) (setURIQueryAttr "alert" error here)) (toResponse error)
+                      Left error -> seeOther (Q.put "dest" (show dest) . Q.put "alert" error $ here) (toResponse error)
                       Right _userId -> do (a,_sid) <- llogin makeSess u p1
                                           case a of
                                             Nothing -> ok (toResponse "Authentication failed.")
-                                            _ -> seeOther dest (toResponse ()))
-        )
+                                            _ -> seeOther dest (toResponse ())))
 
 signInDirName :: String
 signInDirName = "signIn"
