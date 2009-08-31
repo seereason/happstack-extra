@@ -83,23 +83,23 @@ getNextId x =
 
 askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
-    let xis = (getIxSet store) @= Head @= (trace ("askHeads " ++ show i) i) in
+    let xis = (getIxSet store) @= Head @= (trace ("  askHeads " ++ show i) i) in
     case map scrub (toList xis) of
       [] -> error $ "askHeads - no head: " ++ show (map getRevisionInfo (toList xis))
-      xs -> trace ("askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
+      xs -> trace ("  askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
 askAllRevs :: (Store set elt, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askAllRevs scrub i store =
     let xis = (getIxSet store) @= i in
     case map scrub (toList xis) of
       [] -> error $ "askAllRevs - no head: " ++ show (map getRevisionInfo (toList xis))
-      xs -> trace ("askAllRevs -> " ++ show (map (fmap getRevisionInfo) xs)) xs
+      xs -> trace ("  askAllRevs -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
 askRev :: (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Maybe elt
 askRev scrub rev store =
-    case map scrub (toList (getIxSet store @= (trace ("askRev " ++ show rev) rev))) of
+    case map scrub (toList (getIxSet store @= (trace ("  askRev " ++ show rev) rev))) of
       [] -> trace "askRev -> Nothing" Nothing
-      [Just x] -> Just (trace ("askRev -> " ++ show (getRevisionInfo x)) x)
+      [Just x] -> Just (trace ("  askRev -> " ++ show (getRevisionInfo x)) x)
       [Nothing] -> error "askRev: permission denied"
       xs -> error ("askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
@@ -164,7 +164,7 @@ mergeElts scrub parents x store =
     if any (/= i) (map (ident . revision . getRevisionInfo) parents)
     then error "Parent idents don't match merged element"
     else if all isJust (map scrub parents)
-         then traceThis (\ (_, m) -> "mergeElts " ++ show (map getRevisionInfo parents) ++ " -> " ++ show (getRevisionInfo m))
+         then traceThis (\ (_, m) -> "  mergeElts " ++ show (map getRevisionInfo parents) ++ " -> " ++ show (getRevisionInfo m))
                   (merge store parents x)
          else error "Insuffient permissions"
 
@@ -184,7 +184,7 @@ combineElts readScrub writeScrub i set =
           let copyRev s d = putRevisionInfo (getRevisionInfo s) d
               o' = maybe Nothing (Just . copyRev l) o
               r' = copyRev l r in
-          case traceThis (\ m -> "threeWayMerge " ++ show [fmap getRevisionInfo o, Just (getRevisionInfo l), Just (getRevisionInfo r)] ++ " -> " ++ show (fmap getRevisionInfo m))
+          case traceThis (\ m -> "  threeWayMerge " ++ show [fmap getRevisionInfo o, Just (getRevisionInfo l), Just (getRevisionInfo r)] ++ " -> " ++ show (fmap getRevisionInfo m))
                    (twoOrThreeWayMerge o' l r') of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Just m -> let (set', _) = mergeElts writeScrub [l, r] m set in
@@ -264,7 +264,7 @@ merge :: forall set elt. (Store set elt, Indexable elt ()) => set -> [elt] -> el
 merge store parents merged =
     if any (/= i) parentIds
     then error $ "merge: ident mismatch: merged=" ++ show i ++ ", parents=" ++ show parentIds
-    else (store', trace ("merge: merged'=" ++ show (getRevisionInfo merged')) merged')
+    else (store', trace ("  merge: merged'=" ++ show (getRevisionInfo merged')) merged')
     where
       store' = putMaxRev i (number rev') (putIxSet set' store)
       set' = insert merged' (foldr unHead set parents)
@@ -291,7 +291,7 @@ fixBadRevs i store =
           let store' = putMaxRev i rev store in
           let info = getRevisionInfo x in
           let info' = info {revision = (revision info) {number = rev}, nodeStatus = Head} in
-          let x' = putRevisionInfo (trace ("Changing revision from " ++ show info ++ " to " ++ show info') info') x in
+          let x' = putRevisionInfo (trace ("  Changing revision from " ++ show info ++ " to " ++ show info') info') x in
           let ix = getIxSet store' in
           let ix' = insert x' (delete x ix) in
           let store'' = putIxSet ix' store' in
