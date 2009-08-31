@@ -298,6 +298,7 @@ combineInfo eq _all s x y =
       x' = combine3 (\ _ _ _ -> Nothing) eq a x y
       a = commonAncestor' s x y
 
+{-
 classes :: (Revisable a, Indexable a b, Data a, POSet (IxSet a) a) => (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> [[a]]
 classes eq s xs = 
     case xs of
@@ -306,6 +307,7 @@ classes eq s xs =
                   (x : xs') : classes eq s ys
     where
       combines s x y = isJust $ combine3 (\ _ _ _ -> Nothing) eq (commonAncestor' s x y) x y
+-}
 
 showRev :: RevisionInfo -> String
 showRev r = (show . unIdent . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)

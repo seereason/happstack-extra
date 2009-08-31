@@ -11,7 +11,8 @@ module Happstack.Data.IxSet.Store
     , askAllRevs
     , askHeadTriplets
     , askAllHeads
-    , reviseElt
+    --, reviseElt
+    , reviseAndMerge
     , mergeElts
     , combineElts
     , deleteRev
@@ -103,13 +104,18 @@ askRev scrub rev store =
       [Nothing] -> error "askRev: permission denied"
       xs -> error ("askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
+-- |Return an item's list of (original, left, right) triplets - the
+-- list of pairs of head elements, with the common ancestor.
 askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
-    let xis = (getIxSet store) @= i in
-    case toList (xis @= Head) of
-      [] -> []
-      rs -> triples (\ x y -> commonAncestor xis x y) rs
+    triples (commonAncestor xis) heads
     where
+      heads = toList (xis @= Head)
+      -- This is going to be slow if there are a lot of revisions, but
+      -- it is required by the commonAncestor function.  This is why
+      -- the revision set needs to be pruned.
+      xis = (getIxSet store) @= i
+      -- Build the list of triples.
       triples g xs = concatMap f (tails xs)
           where
             f [] = []
@@ -136,6 +142,7 @@ askAllHeads scrub = map scrub . heads . getIxSet
 
 -- |Create a new revision of an existing element, making the new
 -- |revision the parent and a head.
+{-
 reviseElt :: (Store set elt) => (elt -> Maybe elt) -> elt -> set -> Either elt (set, elt)
 reviseElt scrub x store =
     case map scrub (toList (set @= oldRev)) of
@@ -149,6 +156,27 @@ reviseElt scrub x store =
       xs ->         error (traceString ("reviseElt: duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
     where
       oldRev = revision . getRevisionInfo $ x
+      set = getIxSet store
+-}
+
+-- |Create a new revision of an existing element, and then try to
+-- merge all the heads.
+reviseAndMerge :: (Store set elt) => (elt -> Maybe elt) -> (elt -> Maybe elt) -> elt -> set -> (Maybe set, elt, Maybe [elt])
+reviseAndMerge readScrub writeScrub x store =
+    case map readScrub (toList (set @= oldRev)) of
+      [Just x0] ->
+          if x == putRevisionInfo (getRevisionInfo x) x0
+          then (Nothing, x0, Nothing)
+          else let (store', x') = merge store [x0] x in
+               case combineElts readScrub writeScrub i store' of
+                 Left heads -> (Just store', x', Just heads)
+                 Right (store'', heads) -> (Just store'', x', Just heads)
+      [Nothing] -> error (traceString "reviseAndMerge: permission denied")
+      [] ->        error (traceString ("reviseAndMerge: Not found: " ++ show oldRev))
+      xs ->         error (traceString ("reviseAndMerge: duplicate revision: " ++ show (map (fmap getRevisionInfo) xs)))
+    where
+      i = trace ("reviseAndMerge " ++ show oldRev) (ident oldRev)
+      oldRev = revision (getRevisionInfo x)
       set = getIxSet store
 
 traceString :: String -> String
@@ -168,7 +196,7 @@ mergeElts scrub parents x store =
                   (merge store parents x)
          else error "Insuffient permissions"
 
--- Examine the set of head revisions and attempt to merge as many as
+-- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.
 combineElts :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
 combineElts readScrub writeScrub i set =
