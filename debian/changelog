@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.65) unstable; urgency=low
+
+  * Replace reviseElt and mergeElt with replace in Store, change signature
+    of replace so it takes a list of parent revisions and looks them up
+    rather than taking the elements themselves.
+
+ -- David Fox <dsf@seereason.com>  Wed, 02 Sep 2009 08:59:06 -0700
+
 haskell-happstack-extra (0.64) unstable; urgency=low
 
   * Replace reviseElt with reviseAndMerge in Happstack.Data.IxSet.Store.

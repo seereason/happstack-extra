@@ -18,6 +18,8 @@ module Happstack.Data.IxSet.Store
     , deleteRev
     , setStatus
     , replace
+    , replace1
+    , close
     , fixBadRevs
     ) where
 
@@ -25,7 +27,7 @@ import Data.Data (Data)
 import Data.Function (on)
 import Data.List (tails, groupBy, sortBy)
 import qualified Data.Map as M
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (catMaybes, isJust, isNothing)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, delete, insert)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
@@ -140,31 +142,12 @@ askHeadTriplets scrub i store =
 askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . heads . getIxSet
 
--- |Create a new revision of an existing element, making the new
--- |revision the parent and a head.
-{-
-reviseElt :: (Store set elt) => (elt -> Maybe elt) -> elt -> set -> Either elt (set, elt)
-reviseElt scrub x store =
-    case map scrub (toList (set @= oldRev)) of
-      [Just x0] ->
-          if x == putRevisionInfo (getRevisionInfo x) x0
-          then Left (trace " -> No revision necessary" x0)
-          else let (store', x') = merge store [x0] x in
-               Right (store', (trace (" -> " ++ show (getRevisionInfo x')) x'))
-      [Nothing] -> error (traceString "reviseElt: permission denied")
-      [] ->        error (traceString ("reviseElt: Not found: " ++ show oldRev))
-      xs ->         error (traceString ("reviseElt: duplicate revision: " ++ show (map getRevisionInfo (catMaybes xs))))
-    where
-      oldRev = revision . getRevisionInfo $ x
-      set = getIxSet store
--}
-
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
 reviseAndMerge :: (Store set elt) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (Maybe set, elt, Maybe [elt])
 reviseAndMerge scrub revs x store =
     if all isJust xs
-    then let (store', x') = replace (catMaybes xs) x store
+    then let (store', x') = replace1 scrub revs x store
              i = trace ("  reviseAndMerge " ++ show revs) (ident (revision (getRevisionInfo x'))) in
          case combineHeads scrub i store' of
            Left heads -> (Just store', x', Just heads)
@@ -173,52 +156,11 @@ reviseAndMerge scrub revs x store =
     where
       xs = map scrub (toList (set @+ revs))
       set = getIxSet store
-{-
-    case map scrub (toList (set @* revs)) of
-      [Just x0] ->
-          if x == putRevisionInfo (getRevisionInfo x) x0
-          then (Nothing, x0, Nothing)
-          else let (store', x') = replace [x0] x store in
-               case combineHeads scrub i store' of
-                 Left heads -> (Just store', x', Just heads)
-                 Right (store'', heads) -> (Just store'', x', Just heads)
-      [Nothing] -> error (traceString "reviseAndMerge: permission denied")
-      [] ->        error (traceString ("reviseAndMerge: Not found: " ++ show oldRev))
-      xs ->         error (traceString ("reviseAndMerge: duplicate revision: " ++ show (map (fmap getRevisionInfo) xs)))
-    where
-      i = trace ("reviseAndMerge " ++ show oldRev) (ident oldRev)
-      oldRev = revision (getRevisionInfo x)
-      set = getIxSet store
-
-traceString :: String -> String
-traceString s = trace s s
--}
-
--- |Create a new revision which is the child of several existing
--- revisions.  In other words, merge several heads into one.  The
--- revision number in x is ignored, but the Ident must match the
--- parent elements.
-{-
-replaceElts :: (Store set elt) => (elt -> Maybe elt) -> (elt -> Maybe elt) -> [elt] -> elt -> set -> (set, elt)
-replaceElts readScrub _writeScrub parents x store =
-    let i = ident (revision (getRevisionInfo x)) in
-    if any (/= i) (map (ident . revision . getRevisionInfo) parents)
-    then error "Parent idents don't match merged element"
-    else if all isJust (map readScrub parents)
-{-
-         then let (store', x') = merge store parents x in
-              case combineElts readScrub writeScrub i store' of
-                Left _heads -> (store', x')
-                Right (store'', _heads) -> (store'', x')
--}
-         then traceThis (\ (_, m) -> "  replaceElts " ++ show (map getRevisionInfo parents) ++ " -> " ++ show (getRevisionInfo m))
-                  (adopt store parents x)
-         else error "Insuffient permissions"
--}
 
 -- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.
-combineHeads :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
+combineHeads :: forall set elt. (Store set elt) =>
+                (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
 combineHeads scrub i set =
     merge False set (traceThis (\ triplets -> "  combineHeads: length triplets=" ++ show (length triplets))
                      (askHeadTriplets scrub (trace ("  combineHeads " ++ show i)
@@ -233,11 +175,18 @@ combineHeads scrub i set =
       merge merged set (Just (Triplet o@(Just _) l r) : more) =
           let copyRev s d = putRevisionInfo (getRevisionInfo s) d
               o' = fmap (copyRev l) o
-              r' = copyRev l r in
-          case traceThis (\ m -> "  threeWayMerge " ++ show [fmap getRevisionInfo o, Just (getRevisionInfo l), Just (getRevisionInfo r)] ++ " -> " ++ show (fmap getRevisionInfo m))
+              r' = copyRev l r
+              orev = fmap (revision . getRevisionInfo) o
+              lrev = revision (getRevisionInfo l)
+              rrev = revision (getRevisionInfo r) in
+          case traceThis (\ m -> "  combineHeads threeWayMerge " ++
+                                 "o=" ++ show orev ++
+                                 ", l=" ++ show lrev ++
+                                 ", r=" ++ show rrev ++
+                                 " -> " ++ show (fmap (revision . getRevisionInfo) m))
                    (twoOrThreeWayMerge o' l r') of
             -- We merged a triplet, set the merged flag and re-start the combine process
-            Just m -> let (set', _) = replace [l, r] m set in
+            Just m -> let (set', _) = replace1 scrub [lrev, rrev] m set in
                       merge True set' (askHeadTriplets scrub i set)
             -- We couldn't merge a triplet, try the next
             Nothing -> merge merged set more
@@ -265,10 +214,13 @@ setStatus scrub status rev store =
       [] -> error ("Not found: " ++ show rev)
       xs -> error ("Duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
--- Delete the revision from the store, and anywhere it appears in an
--- element's parent list replace with its parent list.  Return the new
--- head, if there still is one.
-deleteRev :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Either (Maybe elt) (set, Maybe elt)
+-- |Delete a revision from the store, and remove its revision number
+-- from all parent lists.  Return the new head, if there still is one.
+-- Note the distinction between this and closing a revision, which
+-- leaves it in the store but sets its status to NonHead without
+-- creating any children.
+deleteRev :: forall set elt. (Store set elt) =>
+             (elt -> Maybe elt) -> Revision -> set -> Either (Maybe elt) (set, Maybe elt)
 deleteRev scrub rev store =
     case map scrub xos of
       [] -> Left Nothing         -- Nothing to delete
@@ -293,7 +245,9 @@ deleteRev scrub rev store =
                                  then replace x (setHead Head x) xs
                                  else if elem (number' xo) (parentRevisions' x)
                                       -- Remove the victim node from the parent list and add the victim's parent list
-                                      then replace x (setParentRevisions (filter (/= (number' xo)) (parentRevisions' x) ++ parentRevisions' xo) x) xs
+                                      then replace x (setParentRevisions
+                                                      (filter (/= (number' xo)) (parentRevisions' x) ++
+                                                       parentRevisions' xo) x) xs
                                       else xs in
           Right (putIxSet xs' store, Just xo)
       _ -> error "Conflict"
@@ -312,29 +266,71 @@ heads s = toList (s @= Head)
 -- parents, set its nodeStatus to Head, and set the nodeStatus of all
 -- the parents to NonHead.  Note that this can be used to create a
 -- revision (by passing an empty parent list), revise a single item,
--- or merge several items.
-replace :: forall set elt. (Store set elt, Indexable elt ()) => [elt] -> elt -> set -> (set, elt)
-replace parents merged store =
-    if any (/= i) (trace ("  replace: parents=" ++ show (map getRevisionInfo parents) ++ ", merged=" ++ show (getRevisionInfo merged))
-                   parentIds)
-    then error $ "replace: ident mismatch: merged=" ++ show i ++ ", parents=" ++ show parentIds
-    else (store', trace ("  replace: merged'=" ++ show (getRevisionInfo merged')) merged')
+-- or merge several items.  It can also be used to create a branch 
+-- by revising an element that already has children.
+replace1 :: forall set elt. (Store set elt, Indexable elt ()) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (set, elt)
+replace1 scrub parentRevs merged store =
+    case replace scrub parentRevs [merged] store of
+      (store', [merged']) -> (store', merged')
+      _ -> error "Unexpected result from replace"
+
+allEqual :: Eq a => [a] -> Bool
+allEqual (x : more) = all (\ y -> x == y) more
+allEqual [] = True
+
+allEqualBy :: Eq b => (a -> b) -> [a] -> Bool
+allEqualBy f (x : more) = all (\ y -> f x == f y) more
+allEqualBy _ [] = True
+
+-- |Replace zero or more parents with zero or more children.
+replace :: forall set elt. (Store set elt, Indexable elt ()) =>
+           (elt -> Maybe elt) -> [Revision] -> [elt] -> set -> (set, [elt])
+replace scrub parentRevs children store =
+    case parentIds ++ childIds of
+      [] -> error "replace: No parents and no children"
+      ids@(i : _) | allEqual ids -> replace' scrub i parentRevs children store
+      ids -> error $ "replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds
     where
-      store' = putMaxRev i (number rev') (putIxSet set' store)
-      set' = insert merged' (foldr unHead set parents)
-      set = getIxSet store
-      merged' = putRevisionInfo info' merged
-      info' = RevisionInfo {revision = rev', parentRevisions = map number parentRevs, nodeStatus = Head}
-      rev' = rev {number = 1 + getMaxRev i store}
+      childIds = map (ident . revision . getRevisionInfo) children
       parentIds = map ident parentRevs
-      parentRevs = map (revision . getRevisionInfo) parents
-      i = ident rev
-      rev = revision . getRevisionInfo $ merged
-      unHead :: elt -> IxSet elt -> IxSet elt
+
+replace' :: forall set elt. (Store set elt, Indexable elt ()) =>
+            (elt -> Maybe elt) -> Ident -> [Revision] -> [elt] -> set -> (set, [elt])
+replace' scrub i parentRevs children store =
+    case any isNothing parents of
+      True -> error "replace: Permission denied"
+      False -> (store'', children')
+    where
+      store'' :: set
+      store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'
+      store' :: set
+      store' = putIxSet set'' store'
+      set'' :: IxSet elt
+      set'' = foldr insert set' children'
+      set' :: IxSet elt
+      set' = foldr unHead set (catMaybes parents)
+      parents :: [Maybe elt]
+      parents = map scrub (toList (set @+ parentRevs))
+      children' :: [elt]
+      children' = map (uncurry putRevisionInfo) (zip childInfo children)
+      childInfo :: [RevisionInfo]
+      childInfo = map (\ rev -> RevisionInfo {revision = rev,
+                                              parentRevisions = map number parentRevs,
+                                              nodeStatus = Head}) childRevs'
+      childRevs' :: [Revision]
+      childRevs' = map (\ (rev, n) -> rev {number = n + getMaxRev i store}) (zip childRevs [1..])
+      childRevs :: [Revision]
+      childRevs = map (revision . getRevisionInfo) children
+      set :: IxSet elt
+      set = getIxSet store
       unHead x xs = insert x' (delete x xs)
           where x' = putRevisionInfo (f (getRevisionInfo x)) x
                 f :: RevisionInfo -> RevisionInfo
                 f x = x {nodeStatus = NonHead}
+
+-- |Close some revisions without creating any children.
+close :: forall set elt. (Store set elt, Indexable elt ()) => (elt -> Maybe elt) -> [Revision] -> set -> (set)
+close scrub revs store = fst $ replace scrub revs [] store
 
 fixBadRevs :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> set
 fixBadRevs i store =
