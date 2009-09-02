@@ -42,7 +42,7 @@ import Debug.Trace
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
 
-class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | set -> elt where
+class (Revisable elt, Indexable elt s, Data elt, Ord elt) => Store set elt s | set -> elt, set -> s where
     getMaxId :: set -> Ident
     putMaxId :: Ident -> set -> set
     getMaxRevs :: set -> M.Map Ident Integer
@@ -51,10 +51,10 @@ class (Revisable elt, Indexable elt (), Data elt, Ord elt) => Store set elt | se
     putIxSet :: IxSet elt -> set -> set
 
 -- FIXME - we need a safer way to increase and use the max rev, like getNextId
-putMaxRev :: Store set elt => Ident -> Integer -> set -> set
+putMaxRev :: Store set elt s => Ident -> Integer -> set -> set
 putMaxRev ident rev s = putMaxRevs (M.insert ident rev (getMaxRevs s)) s
 
-getMaxRev :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> Integer
+getMaxRev :: forall set elt s. (Store set elt s, Revisable elt) => Ident -> set -> Integer
 getMaxRev ident s = 
     maybe getMaxRev' id (M.lookup ident (getMaxRevs s))
     where
@@ -77,28 +77,28 @@ instance (Ord a, Default a) => Default (Triplet a) where
 $(deriveSerialize ''Triplet)
 instance Version (Triplet a)
 
-getNextId :: (Store set elt) => set -> (set, Ident)
+getNextId :: (Store set elt s) => set -> (set, Ident)
 getNextId x = 
     (putMaxId newId x, newId)
     where
       newId = Ident (oldId + 1)
       (Ident oldId) = getMaxId x
 
-askHeads :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askHeads :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
     let xis = (getIxSet store) @= Head @= (trace ("  askHeads " ++ show i) i) in
     case map scrub (toList xis) of
       [] -> error $ "askHeads - no head: " ++ show (map getRevisionInfo (toList xis))
       xs -> trace ("  askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
-askAllRevs :: (Store set elt, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askAllRevs :: (Store set elt s, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askAllRevs scrub i store =
     let xis = (getIxSet store) @= i in
     case map scrub (toList xis) of
       [] -> error $ "askAllRevs - no head: " ++ show (map getRevisionInfo (toList xis))
       xs -> trace ("  askAllRevs -> " ++ show (map (fmap getRevisionInfo) xs)) xs
 
-askRev :: (Store set elt) => (elt -> Maybe elt) -> Revision -> set -> Maybe elt
+askRev :: (Store set elt s) => (elt -> Maybe elt) -> Revision -> set -> Maybe elt
 askRev scrub rev store =
     case map scrub (toList (getIxSet store @= (trace ("  askRev " ++ show rev) rev))) of
       [] -> trace "askRev -> Nothing" Nothing
@@ -108,7 +108,7 @@ askRev scrub rev store =
 
 -- |Return an item's list of (original, left, right) triplets - the
 -- list of pairs of head elements, with the common ancestor.
-askHeadTriplets :: (Store set elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
+askHeadTriplets :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
     triples (commonAncestor xis) heads
     where
@@ -139,12 +139,12 @@ askHeadTriplets scrub i store =
                                  _ -> Nothing) xs
 
 
-askAllHeads :: (Store set elt) => (elt -> Maybe elt) -> set -> [Maybe elt]
+askAllHeads :: (Store set elt s) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . heads . getIxSet
 
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
-reviseAndMerge :: (Store set elt) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (Maybe set, elt, Maybe [elt])
+reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (Maybe set, elt, Maybe [elt])
 reviseAndMerge scrub revs x store =
     if all isJust xs
     then let (store', x') = replace1 scrub revs x store
@@ -159,7 +159,7 @@ reviseAndMerge scrub revs x store =
 
 -- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.
-combineHeads :: forall set elt. (Store set elt) =>
+combineHeads :: forall set elt s. (Store set elt s) =>
                 (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
 combineHeads scrub i set =
     merge False set (traceThis (\ triplets -> "  combineHeads: length triplets=" ++ show (length triplets))
@@ -200,7 +200,7 @@ _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 _traceRevs :: Revisable a => String -> [a] -> [a]
 _traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
 
-setStatus :: forall set elt. (Store set elt) => (elt -> Maybe elt) -> NodeStatus -> Revision -> set -> (set, elt)
+setStatus :: forall set elt s. (Store set elt s) => (elt -> Maybe elt) -> NodeStatus -> Revision -> set -> (set, elt)
 setStatus scrub status rev store =
     let xs = getIxSet store :: IxSet elt
         xis = xs @= ident rev :: IxSet elt
@@ -219,7 +219,7 @@ setStatus scrub status rev store =
 -- Note the distinction between this and closing a revision, which
 -- leaves it in the store but sets its status to NonHead without
 -- creating any children.
-deleteRev :: forall set elt. (Store set elt) =>
+deleteRev :: forall set elt s. (Store set elt s) =>
              (elt -> Maybe elt) -> Revision -> set -> Either (Maybe elt) (set, Maybe elt)
 deleteRev scrub rev store =
     case map scrub xos of
@@ -257,7 +257,7 @@ deleteRev scrub rev store =
       xos = (toList $ xis @= rev) :: [elt]      -- For each child of the victim node, replace the victim node's
 
 -- FIXME - make this a query so we don't have to convert to a list
-heads :: (Data a, Indexable a (), Revisable a, Ord a) => IxSet a -> [a]
+heads :: (Data a, Indexable a s, Revisable a, Ord a) => IxSet a -> [a]
 heads s = toList (s @= Head)
 -- heads s = filter ((== Head) . nodeStatus . getRevisionInfo) . toList $ s
 
@@ -268,7 +268,7 @@ heads s = toList (s @= Head)
 -- revision (by passing an empty parent list), revise a single item,
 -- or merge several items.  It can also be used to create a branch 
 -- by revising an element that already has children.
-replace1 :: forall set elt. (Store set elt, Indexable elt ()) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (set, elt)
+replace1 :: forall set elt s. (Store set elt s, Indexable elt s) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> (set, elt)
 replace1 scrub parentRevs merged store =
     case replace scrub parentRevs [merged] store of
       (store', [merged']) -> (store', merged')
@@ -283,7 +283,7 @@ allEqualBy f (x : more) = all (\ y -> f x == f y) more
 allEqualBy _ [] = True
 
 -- |Replace zero or more parents with zero or more children.
-replace :: forall set elt. (Store set elt, Indexable elt ()) =>
+replace :: forall set elt s. (Store set elt s, Indexable elt s) =>
            (elt -> Maybe elt) -> [Revision] -> [elt] -> set -> (set, [elt])
 replace scrub parentRevs children store =
     case parentIds ++ childIds of
@@ -294,7 +294,7 @@ replace scrub parentRevs children store =
       childIds = map (ident . revision . getRevisionInfo) children
       parentIds = map ident parentRevs
 
-replace' :: forall set elt. (Store set elt, Indexable elt ()) =>
+replace' :: forall set elt s. (Store set elt s, Indexable elt s) =>
             (elt -> Maybe elt) -> Ident -> [Revision] -> [elt] -> set -> (set, [elt])
 replace' scrub i parentRevs children store =
     case any isNothing parents of
@@ -329,10 +329,10 @@ replace' scrub i parentRevs children store =
                 f x = x {nodeStatus = NonHead}
 
 -- |Close some revisions without creating any children.
-close :: forall set elt. (Store set elt, Indexable elt ()) => (elt -> Maybe elt) -> [Revision] -> set -> (set)
+close :: forall set elt s. (Store set elt s, Indexable elt s) => (elt -> Maybe elt) -> [Revision] -> set -> (set)
 close scrub revs store = fst $ replace scrub revs [] store
 
-fixBadRevs :: forall set elt. (Store set elt, Revisable elt) => Ident -> set -> set
+fixBadRevs :: forall set elt s. (Store set elt s, Revisable elt) => Ident -> set -> set
 fixBadRevs i store =
     foldr repair store (concat bad)
     where 
