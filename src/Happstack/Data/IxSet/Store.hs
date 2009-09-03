@@ -304,7 +304,7 @@ replace' scrub i parentRevs children store =
       store'' :: set
       store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'
       store' :: set
-      store' = putIxSet set'' store'
+      store' = putIxSet set'' store
       set'' :: IxSet elt
       set'' = foldr insert set' children'
       set' :: IxSet elt
