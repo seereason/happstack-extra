@@ -25,7 +25,7 @@ module Happstack.Data.IxSet.Store
 
 import Data.Data (Data)
 import Data.Function (on)
-import Data.List (tails, groupBy, sortBy)
+import Data.List (tails, groupBy, sortBy, intercalate)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, isNothing)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
@@ -106,12 +106,18 @@ askRev scrub rev store =
       [Nothing] -> error "askRev: permission denied"
       xs -> error ("askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs)))
 
+showTriplet :: Revisable a => Triplet a -> String
+showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision . getRevisionInfo) o ++
+                              ", l=" ++ (show . revision . getRevisionInfo $ l) ++
+                              ", r=" ++ (show . revision . getRevisionInfo $ r) ++ "}"
+
 -- |Return an item's list of (original, left, right) triplets - the
 -- list of pairs of head elements, with the common ancestor.
 askHeadTriplets :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askHeadTriplets scrub i store =
-    triples (commonAncestor xis) heads
+    trace ("  askHeadTriplets " ++ show i ++ " -> " ++ intercalate ", " (map (maybe "Nothing" showTriplet) result)) result
     where
+      result = triples (commonAncestor xis) heads
       heads = toList (xis @= Head)
       -- This is going to be slow if there are a lot of revisions, but
       -- it is required by the commonAncestor function.  This is why
@@ -163,8 +169,7 @@ combineHeads :: forall set elt s. (Store set elt s) =>
                 (elt -> Maybe elt) -> Ident -> set -> Either [elt] (set, [elt])
 combineHeads scrub i set =
     merge False set (traceThis (\ triplets -> "  combineHeads: length triplets=" ++ show (length triplets))
-                     (askHeadTriplets scrub (trace ("  combineHeads " ++ show i)
-                                             i) set))
+                     (askHeadTriplets scrub i set))
     where
       -- No triplets left to merge, return the finalized list of heads
       merge :: Bool -> set -> [Maybe (Triplet elt)] -> Either [elt] (set, [elt])
@@ -278,9 +283,11 @@ allEqual :: Eq a => [a] -> Bool
 allEqual (x : more) = all (\ y -> x == y) more
 allEqual [] = True
 
+{-
 allEqualBy :: Eq b => (a -> b) -> [a] -> Bool
 allEqualBy f (x : more) = all (\ y -> f x == f y) more
 allEqualBy _ [] = True
+-}
 
 -- |Replace zero or more parents with zero or more children.
 replace :: forall set elt s. (Store set elt s, Indexable elt s) =>
@@ -289,7 +296,7 @@ replace scrub parentRevs children store =
     case parentIds ++ childIds of
       [] -> error "replace: No parents and no children"
       ids@(i : _) | allEqual ids -> replace' scrub i parentRevs children store
-      ids -> error $ "replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds
+      _ids -> error $ "replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds
     where
       childIds = map (ident . revision . getRevisionInfo) children
       parentIds = map ident parentRevs
@@ -299,7 +306,8 @@ replace' :: forall set elt s. (Store set elt s, Indexable elt s) =>
 replace' scrub i parentRevs children store =
     case any isNothing parents of
       True -> error "replace: Permission denied"
-      False -> (store'', children')
+      False -> trace ("  replace': i=" ++ show i ++ ", parents=" ++ show parentRevs ++ ", children=" ++ show childRevs')
+                 (store'', children')
     where
       store'' :: set
       store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'

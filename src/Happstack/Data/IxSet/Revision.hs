@@ -29,8 +29,8 @@ module Happstack.Data.IxSet.Revision
 --import Control.Applicative.Error (Failing(..))
 import qualified Data.ByteString.Char8 as B
 import Data.Generics
-import Data.List (tails, partition, intercalate)
-import Data.Maybe (fromJust, isJust)
+import Data.List (tails, intercalate)
+--import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
 import Happstack.Data (Default(..), deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
 import Happstack.Data.IxSet
@@ -42,7 +42,7 @@ import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3)
 import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 
-import Debug.Trace
+--import Debug.Trace
 
 -- We need newtypes for each of these so we can make them IxSet
 -- indexes.  That is also why they must each be a separate field
