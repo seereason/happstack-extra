@@ -192,7 +192,7 @@ combineHeads scrub i set =
                    (twoOrThreeWayMerge o' l r') of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Just m -> let (set', _) = replace1 scrub [lrev, rrev] m set in
-                      merge True set' (askHeadTriplets scrub i set)
+                      merge True set' (askHeadTriplets scrub i set')
             -- We couldn't merge a triplet, try the next
             Nothing -> merge merged set more
       -- Permission failure
