@@ -138,7 +138,7 @@ askHeads scrub i store =
 
 -- |Return all the heads for all the idents in the store.
 askAllHeads :: (Store set elt s) => (elt -> Maybe elt) -> set -> [Maybe elt]
-askAllHeads scrub = map scrub . heads . getIxSet
+askAllHeads scrub = map scrub . toList . (\ s -> s @= Head) . getIxSet
 
 -- |Return an item's list of (original, left, right) triplets - the
 -- list of pairs of head elements, with the common ancestor.
