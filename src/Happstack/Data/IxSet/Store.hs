@@ -16,6 +16,7 @@ module Happstack.Data.IxSet.Store
     --, replaceElts
     , combineHeads
     , deleteRev
+    , prune
     , setStatus
     , replace
     , replace1
@@ -260,6 +261,32 @@ deleteRev scrub rev store =
       xs = getIxSet store :: IxSet elt
       xis = xs @= ident rev :: IxSet elt
       xos = (toList $ xis @= rev) :: [elt]      -- For each child of the victim node, replace the victim node's
+
+-- |Prune (delete) any elements that aren't heads or a closest
+-- common ancestor of some pair of heads.  Note that some revision
+-- that is not a head may be sitting in a form in somebody's browser,
+-- and when they edit and submit that form they could create a new
+-- head which has ancestors this function would have deleted.  There
+-- are several potential solutions to this problem, the simplest is to
+-- implement two way merging.
+prune :: forall set elt s. (Store set elt s) =>
+         (elt -> Maybe elt) -> Ident -> set -> Maybe set
+prune scrub i store =
+    case discard of
+      [] -> Nothing
+      _ -> Just $ putIxSet (foldr delete set (trace ("  prune - discard=" ++ show (map rr discard)) discard)) store
+    where
+      discard :: [elt]
+      discard = toList (foldr delete (set @= i) (trace ("  prune - keep=" ++ show (map rr keep)) keep))
+      keep :: [elt]
+      keep = catMaybes (heads ++ map original (catMaybes triplets))
+      triplets :: [Maybe (Triplet elt)]
+      triplets = askHeadTriplets scrub i store
+      heads = askHeads scrub i store
+      set = getIxSet store
+
+rr :: Revisable a => a -> Revision
+rr = revision . getRevisionInfo
 
 -- FIXME - make this a query so we don't have to convert to a list
 heads :: (Data a, Indexable a s, Revisable a, Ord a) => IxSet a -> [a]
