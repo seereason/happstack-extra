@@ -1,3 +1,12 @@
+haskell-happstack-extra (0.67) unstable; urgency=low
+
+  * Change the functions in IxSet.Store to return Failing instead of
+    calling error.
+  * Add Happstack.Data.Logger
+  * Modify Happstack.Data.Main to start the logger.
+
+ -- David Fox <dsf@seereason.com>  Sat, 12 Sep 2009 06:18:06 -0700
+
 haskell-happstack-extra (0.66) unstable; urgency=low
 
   * Fix a nasty bug in Happstack.Data.IxSet.Store.combineHeads
