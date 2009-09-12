@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, FunctionalDependencies, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell, UndecidableInstances #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, FunctionalDependencies, MultiParamTypeClasses,
+             ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, UndecidableInstances #-}
+{-# OPTIONS -fno-warn-orphans #-}
 -- |These are the pure operations on Store instances, which are
 -- typically IxSets of Revisable objects used in a Happstack database.
 -- Each element has an Ident, which is stored in a Revision object
@@ -35,6 +37,7 @@ import Data.Function (on)
 import Data.List (tails, groupBy, sortBy, intercalate)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, isNothing)
+import Data.Typeable (Typeable1)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, delete, insert)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
@@ -94,6 +97,12 @@ getMaxRev ident s =
       f :: elt -> Integer -> Integer
       f x rev = max rev (number . revision . getRevisionInfo $ x)
 
+-- TODO: move somewhere
+deriving instance (Data a) => Data (Failing a)
+deriving instance Typeable1 Failing
+instance Version (Failing a)
+$(deriveSerialize ''Failing)
+
 -- |The Triplet type represents a possible conflict between two values
 -- and their common ancestor (which may be missing if it was already
 -- deleted from the database.)
@@ -113,11 +122,11 @@ $(deriveSerialize ''Triplet)
 instance Version (Triplet a)
 
 -- |Return a particular revision.
-askRev :: (Store set elt s) => (elt -> Maybe elt) -> Revision -> set -> Failing (Maybe elt)
+askRev :: (Store set elt s) => (elt -> Maybe elt) -> Revision -> set -> Failing elt
 askRev scrub rev store =
     case map scrub (toList (getIxSet store @= (trace ("  askRev " ++ show rev) rev))) of
-      [] -> trace "askRev -> Nothing" (Success Nothing)
-      [Just x] -> Success $ Just (trace ("  askRev -> " ++ show (getRevisionInfo x)) x)
+      [] -> Failure ["askRev: no such revision: " ++ show rev]
+      [Just x] -> Success $ trace ("  askRev -> " ++ show (getRevisionInfo x)) x
       [Nothing] -> Failure ["askRev: permission denied"]
       xs -> Failure ["askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs))]
 
@@ -330,14 +339,16 @@ prune scrub i store =
 -}
       set = getIxSet store
 
+{-
 concatFailing :: [Failing a] -> Failing [a]
 concatFailing xs =
     f [] [] xs
     where 
       f successes [] [] = Success successes
-      f successes failures [] = Failure failures
+      f _ failures [] = Failure failures
       f successes failures (Success x : more) = f (x : successes) failures more
       f successes failures (Failure msgs : more) = f successes (msgs ++ failures) more
+-}
 
 -- FIXME - make this a query so we don't have to convert to a list
 {-
@@ -449,11 +460,13 @@ showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision 
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
 
+{-
 showRevs :: Revisable a => [a] -> String
 showRevs xs = show (map (revision . getRevisionInfo) xs)
 
 rr :: Revisable a => a -> Revision
 rr = revision . getRevisionInfo
+-}
 
 allEqual :: Eq a => [a] -> Bool
 allEqual (x : more) = all (\ y -> x == y) more
