@@ -34,18 +34,20 @@ module Happstack.Data.IxSet.Store
 import Control.Applicative.Error (Failing(Success, Failure))
 import Data.Data (Data)
 import Data.Function (on)
-import Data.List (tails, groupBy, sortBy, intercalate)
+import Data.List (tails, groupBy, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, isNothing)
 import Data.Typeable (Typeable1)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
-import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, delete, insert)
+import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null)
+import Happstack.Data.IxSet.Extra (difference)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo),
                                       RevisionInfo(RevisionInfo, revision, parentRevisions),
                                       Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
+import Prelude hiding (null)
 
 import Debug.Trace
 
@@ -131,20 +133,16 @@ askRev scrub rev store =
       xs -> Failure ["askRev: duplicate revisions: " ++ show (map getRevisionInfo (catMaybes xs))]
 
 -- |Return all the revisions for a given ident.
-askAllRevs :: (Store set elt s, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> Failing [Maybe elt]
-askAllRevs scrub i store =
-    let xis = (getIxSet store) @= i in
-    case map scrub (toList xis) of
-      [] -> Failure ["askAllRevs - no head: " ++ show (map getRevisionInfo (toList xis))]
-      xs -> trace ("  askAllRevs -> " ++ show (map (fmap getRevisionInfo) xs)) (Success xs)
+askAllRevs :: (Store set elt s, Revisable elt) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
+askAllRevs scrub i store = map scrub (toList ((getIxSet store) @= i))
 
 -- |Return all the head revisions for a given ident.
-askHeads :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> Failing [Maybe elt]
+askHeads :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> [Maybe elt]
 askHeads scrub i store =
-    let xis = (getIxSet store) @= Head @= (trace ("  askHeads " ++ show i) i) in
-    case map scrub (toList xis) of
-      [] -> Failure ["askHeads - no head: " ++ show (map getRevisionInfo (toList xis))]
-      xs -> trace ("  askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) (Success xs)
+    trace ("  askHeads -> " ++ show (map (fmap getRevisionInfo) xs)) xs
+    where
+      xs = map scrub (toList xis)
+      xis = (getIxSet store) @= Head @= (trace ("  askHeads " ++ show i) i)
 
 -- |Return all the heads for all the idents in the store.
 askAllHeads :: (Store set elt s) => (elt -> Maybe elt) -> set -> [Maybe elt]
@@ -154,7 +152,7 @@ askAllHeads scrub = map scrub . toList . (\ s -> s @= Head) . getIxSet
 -- list of pairs of head elements, with the common ancestor.
 askTriplets :: (Store set elt s) => (elt -> Maybe elt) -> Ident -> set -> [Maybe (Triplet elt)]
 askTriplets scrub i store =
-    trace ("  askTriplets " ++ show i ++ " -> " ++ intercalate ", " (map (maybe "Nothing" showTriplet) result)) result
+    {- trace ("  askTriplets " ++ show i ++ " -> " ++ intercalate ", " (map (maybe "Nothing" showTriplet) result)) -} result
     where
       result = triples (commonAncestor xis) heads
       heads = toList (xis @= Head)
@@ -185,14 +183,9 @@ askTriplets scrub i store =
                                  (Just x', Just y') -> Just (Triplet {original=Nothing, left=x', right=y'})
                                  _ -> Nothing) xs
 
-instance Monad Failing where
-    return = Success
-    (Failure ss) >>= _ = Failure ss
-    (Success x) >>= f = f x
-
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
-reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> Failing (Maybe set, elt, Maybe [elt])
+reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> Failing (Maybe set, elt, [elt])
 reviseAndMerge scrub revs x store =
     if all isJust xs
     then case replace1 scrub revs x store of
@@ -201,27 +194,27 @@ reviseAndMerge scrub revs x store =
                let i = trace ("  reviseAndMerge " ++ show revs) (ident (revision (getRevisionInfo x'))) in
                case combineHeads scrub i store' of
                  Failure ss -> Failure ss
-                 Success (Left heads) -> Success (Just store', x', Just heads)
-                 Success (Right (store'', heads)) -> Success (Just store'', x', Just heads)
+                 Success (Nothing, heads) -> Success (Just store', x', heads)
+                 Success (Just store'', heads) -> Success (Just store'', x', heads)
     else Failure ["reviseAndMerge: permission denied"]
     where
       xs = map scrub (toList (set @+ revs))
       set = getIxSet store
 
 -- |Examine the set of head revisions and attempt to merge as many as
--- possible using the automatic threeWayMerge function.
+-- possible using the automatic threeWayMerge function.  Returns the
+-- new list of heads.  The modified store is returned only if changes
+-- were made.
 combineHeads :: forall set elt s. (Store set elt s) =>
-                (elt -> Maybe elt) -> Ident -> set -> Failing (Either [elt] (set, [elt]))
+                (elt -> Maybe elt) -> Ident -> set -> Failing (Maybe set, [elt])
 combineHeads scrub i set =
-    result
+    merge False set (askTriplets scrub i set)
     where
-      result = merge False set triplets
-      triplets = (askTriplets scrub i set)
       -- No triplets left to merge, return the finalized list of heads
-      merge :: Bool -> set -> [Maybe (Triplet elt)] -> Failing (Either [elt] (set, [elt]))
+      merge :: Bool -> set -> [Maybe (Triplet elt)] -> Failing (Maybe set, [elt])
       merge merged set [] =
-          let heads = toList ((getIxSet set @= i) @= Head) in
-          if merged then Success (Right (set, heads)) else Success (Left heads)
+          Success (if merged then Just set else Nothing, heads)
+          where heads = toList ((getIxSet set @= i) @= Head)
       -- Try to merge each of the triplets in turn
       merge merged set (Just (Triplet o@(Just _) l r) : more) =
           let copyRev s d = putRevisionInfo (getRevisionInfo s) d
@@ -270,11 +263,11 @@ setStatus scrub status rev store =
 -- leaves it in the store but sets its status to NonHead without
 -- creating any children.
 deleteRev :: forall set elt s. (Store set elt s) =>
-             (elt -> Maybe elt) -> Revision -> set -> Failing (Either (Maybe elt) (set, Maybe elt))
+             (elt -> Maybe elt) -> Revision -> set -> Failing set
 deleteRev scrub rev store =
     case map scrub xos of
-      [] -> Success (Left Nothing)         -- Nothing to delete
-      [Nothing] -> Success (Left Nothing)  -- Permission denied
+      [] -> Failure ["Not found"]
+      [Nothing] -> Failure ["Permission denied"]
       [Just xo] ->
           let number' = number . revision . getRevisionInfo
               parentRevisions' = parentRevisions . getRevisionInfo
@@ -299,12 +292,12 @@ deleteRev scrub rev store =
                                                       (filter (/= (number' xo)) (parentRevisions' x) ++
                                                        parentRevisions' xo) x) xs
                                       else xs in
-          Success (Right (putIxSet xs' store, Just xo))
+          Success (putIxSet xs' store)
       _ -> Failure ["Conflict"]
     where
       xs = getIxSet store :: IxSet elt
       xis = xs @= ident rev :: IxSet elt
-      xos = (toList $ xis @= rev) :: [elt]      -- For each child of the victim node, replace the victim node's
+      xos = (toList $ xis @= rev) :: [elt]
 
 -- |Prune (delete) any elements that aren't heads or a closest
 -- common ancestor of some pair of heads.  Note that some revision
@@ -316,46 +309,24 @@ deleteRev scrub rev store =
 prune :: forall set elt s. (Store set elt s) =>
          (elt -> Maybe elt) -> Ident -> set -> Failing (Maybe set)
 prune scrub i store =
-    case discard of
-      Failure msgs -> Failure msgs
-      Success [] -> Success Nothing
-      Success elts -> Success (Just $ putIxSet (foldr delete set elts) store)
+    if any isNothing triplets
+    then Failure ["Permission denied"]
+    else if any isNothing keep
+         then Failure ["Permission denied"]
+         else Success (if null discard
+                       then Nothing
+                       else (Just $ putIxSet (difference set discard) store))
     where
-      discard = askHeads scrub i store >>=
-                (\ heads' -> return (catMaybes (heads' ++ map original (catMaybes triplets)))) >>=
-                Success . toList . foldr delete (set @= i)
-{-
-      discard :: [elt]
-      discard = toList (foldr delete (set @= i) keep)
-      keep :: Failing [elt]
-      keep = case heads of
-               Failure msgs -> Failure msgs
-               Success heads' -> catMaybes (heads' ++ map original (catMaybes triplets))
--}
+      discard :: IxSet elt
+      discard = difference all (fromList (catMaybes keep))
+      keep :: [Maybe elt]
+      keep = askHeads Just i store ++ fmap scrub (catMaybes ancestors)
+      ancestors = map original (catMaybes triplets)
+      all :: IxSet elt
+      all = set @= i
       triplets :: [Maybe (Triplet elt)]
       triplets = askTriplets scrub i store
-{-
-      heads = concatFailing (askHeads scrub i store)
--}
       set = getIxSet store
-
-{-
-concatFailing :: [Failing a] -> Failing [a]
-concatFailing xs =
-    f [] [] xs
-    where 
-      f successes [] [] = Success successes
-      f _ failures [] = Failure failures
-      f successes failures (Success x : more) = f (x : successes) failures more
-      f successes failures (Failure msgs : more) = f successes (msgs ++ failures) more
--}
-
--- FIXME - make this a query so we don't have to convert to a list
-{-
-heads :: (Data a, Indexable a s, Revisable a, Ord a) => IxSet a -> [a]
-heads s = toList (s @= Head)
--}
--- heads s = filter ((== Head) . nodeStatus . getRevisionInfo) . toList $ s
 
 -- |Declare MERGED to be the child of PARENTS - allocate a new
 -- revision, put it into MERGED's revision field with the list of
@@ -384,6 +355,9 @@ replace scrub parentRevs children store =
       childIds = map (ident . revision . getRevisionInfo) children
       parentIds = map ident parentRevs
 
+-- |This is the internal function that does the work for replace,
+-- replace1, and close.  This fails if we can't access any of the
+-- parents.
 replace' :: forall set elt s. (Store set elt s, Indexable elt s) =>
             (elt -> Maybe elt) -> Ident -> [Revision] -> [elt] -> set -> Failing (set, [elt])
 replace' scrub i parentRevs children store =
@@ -422,7 +396,8 @@ replace' scrub i parentRevs children store =
                 f x = x {nodeStatus = NonHead}
 
 -- |Close some revisions without creating any children.
-close :: forall set elt s. (Store set elt s, Indexable elt s) => (elt -> Maybe elt) -> [Revision] -> set -> Failing (set)
+close :: forall set elt s. (Store set elt s, Indexable elt s) =>
+         (elt -> Maybe elt) -> [Revision] -> set -> Failing (set)
 close scrub revs store = replace scrub revs [] store >>= return . fst
 
 -- Utility functions.
@@ -452,10 +427,10 @@ _fixBadRevs i store =
       revs = toList (set @= i)
       set = getIxSet store
 
-showTriplet :: Revisable a => Triplet a -> String
-showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision . getRevisionInfo) o ++
-                              ", l=" ++ (show . revision . getRevisionInfo $ l) ++
-                              ", r=" ++ (show . revision . getRevisionInfo $ r) ++ "}"
+_showTriplet :: Revisable a => Triplet a -> String
+_showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision . getRevisionInfo) o ++
+                               ", l=" ++ (show . revision . getRevisionInfo $ l) ++
+                               ", r=" ++ (show . revision . getRevisionInfo $ r) ++ "}"
 
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
@@ -482,3 +457,8 @@ _traceRev :: Revisable a => String -> a -> a
 _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 _traceRevs :: Revisable a => String -> [a] -> [a]
 _traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
+
+instance Monad Failing where
+    return = Success
+    (Failure ss) >>= _ = Failure ss
+    (Success x) >>= f = f x
