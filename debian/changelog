@@ -4,8 +4,9 @@ haskell-happstack-extra (0.67) unstable; urgency=low
     calling error.
   * Add Happstack.Data.Logger
   * Modify Happstack.Data.Main to start the logger.
+  * Add IxSet difference to Happstack.Data.IxSet.Extra
 
- -- David Fox <dsf@seereason.com>  Sat, 12 Sep 2009 06:18:06 -0700
+ -- David Fox <dsf@seereason.com>  Sun, 13 Sep 2009 07:17:57 -0700
 
 haskell-happstack-extra (0.66) unstable; urgency=low
 
