@@ -1,11 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Happstack.Data.IxSet.Extra 
-    (testAndInsert
+    ( testAndInsert
+    , difference
     )
         where
 
 import Control.Monad.State
 import Data.Generics
+import qualified Data.Set as Set
 --import Happstack.Data
 import Happstack.Data.IxSet
 
@@ -39,3 +41,8 @@ insertIfNew k v m =
       (Nothing, m') -> Just m'
       (Just _, _) -> return m
 -}
+
+
+-- | Takes the intersection of the two IxSets
+difference :: (Ord a, Data a, Indexable a b) => IxSet a -> IxSet a -> IxSet a
+difference x1 x2 = fromSet $ Set.difference (toSet x1) (toSet x2)
