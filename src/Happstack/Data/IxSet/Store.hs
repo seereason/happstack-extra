@@ -451,3 +451,7 @@ _traceRev :: Revisable a => String -> a -> a
 _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 _traceRevs :: Revisable a => String -> [a] -> [a]
 _traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
+
+--- TODO: move somewhere
+instance Version (Failing a)
+$(deriveSerialize ''Failing)
