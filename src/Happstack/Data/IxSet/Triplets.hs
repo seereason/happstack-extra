@@ -105,12 +105,12 @@ gzipWithM3 f x y z =
             perkid' a d = (tail a, unGQ (head a) d)
             funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
-type GB = GenericQ (GenericQ (GenericQ Bool))			-- Generic Bool Query
+type GB = GenericQ (GenericQ (GenericQ Bool))                   -- Generic Bool Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Bool
-type GM = GenericQ (GenericQ (GenericM Maybe))			-- Generic Maybe Query
+type GM = GenericQ (GenericQ (GenericM Maybe))                  -- Generic Maybe Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
 type PB = (forall x. Data x => x -> x -> x -> Bool)
-type PM = (forall x. Data x => x -> x -> x -> Maybe x)		-- Polymorphic Maybe Query
+type PM = (forall x. Data x => x -> x -> x -> Maybe x)          -- Polymorphic Maybe Query
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
 -- over the "elements" of three instances of a type.  The function

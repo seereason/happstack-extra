@@ -99,12 +99,6 @@ getMaxRev ident s =
       f :: elt -> Integer -> Integer
       f x rev = max rev (number . revision . getRevisionInfo $ x)
 
--- TODO: move somewhere
-deriving instance (Data a) => Data (Failing a)
-deriving instance Typeable1 Failing
-instance Version (Failing a)
-$(deriveSerialize ''Failing)
-
 -- |The Triplet type represents a possible conflict between two values
 -- and their common ancestor (which may be missing if it was already
 -- deleted from the database.)
@@ -457,8 +451,3 @@ _traceRev :: Revisable a => String -> a -> a
 _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x
 _traceRevs :: Revisable a => String -> [a] -> [a]
 _traceRevs prefix xs = trace (prefix ++ show (map getRevisionInfo xs)) xs
-
-instance Monad Failing where
-    return = Success
-    (Failure ss) >>= _ = Failure ss
-    (Success x) >>= f = f x
