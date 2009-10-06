@@ -3,6 +3,7 @@
 module Happstack.Server.Formlets
     ( createForm
     , formletPart
+    , handleFailure
     , handleForm
     , withDatumSP
     ) where
@@ -11,16 +12,18 @@ import Control.Applicative.Error (Failing(..), ErrorMsg)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus,msum)
 import Control.Monad.Trans (MonadIO(liftIO), MonadTrans(lift))
+import Control.Monad.Reader(asks)
+import qualified Data.ByteString.Lazy.UTF8       as LU (toString, fromString)
 import Happstack.Server as Happstack -- (methodSP, methodM, Method(GET, POST), ok, toResponse, withDataFn,
                          -- WebT, Response, ServerPartT(..), anyRequest, notFound, RqData)
-import Happstack.Server (lookPairs)
+import Happstack.Server as Happstack (lookPairs) 
 import Happstack.Server.Extra ()
 import Happstack.Server.SimpleHTTP.Extra ()
 import Happstack.State (QueryEvent, query)
 import Data.Generics.SYB.WithClass.Instances ()
 import Extra.URI (URI)
 import Prelude hiding (div, maybe)
-import Text.Formlets (Form, Env, runFormState)
+import Text.Formlets as F (Form, Env, ContentType(ContentType, ctType, ctSubtype, ctParameters), File(File, content, fileName, contentType), runFormState)
 import HSP
 import qualified HSX.XMLGenerator as HSX
 
@@ -67,19 +70,19 @@ withDatumSP look queryEv f =
 
 -- ^ turn a formlet into XML+ServerPartT which can be embedded in a larger document
 formletPart ::
-  (EmbedAsChild m xml, EmbedAsAttr m (Attr String String), MonadIO m, Functor m, ToMessage b, FilterMonad Response m, WebMonad Response m, MonadPlus m, ServerMonad m) 
+  (EmbedAsChild m xml, EmbedAsAttr m (Attr String String), Functor m, ToMessage b, FilterMonad Response m, WebMonad Response m, MonadPlus m, ServerMonad m) 
   => String -- ^ prefix used to ensure field names are unique
   -> String -- ^ url to POST form results to
   -> (a -> XMLGenT m b) -- ^ handler used when form validates
   -> ([ErrorMsg] -> [XMLGenT m (HSX.XML m)] -> XMLGenT m b) -- ^ handler used when form does not validate
-  -> Form xml IO a -- ^ the formlet
+  -> Form xml m a -- ^ the formlet
   -> XMLGenT m (HSX.XML m)
 formletPart prefix action handleSuccess handleFailure form = 
-        withDataFn lookPairs $ \env ->
-            let (collector, formXML,_) = runFormState (map (second Left) env) prefix form
+        withDataFn lookEnv $ \env ->
+            let (collector, formXML,_) = runFormState env prefix form
             in 
                  msum [ methodSP POST $ XMLGenT $ Happstack.escape . fmap toResponse $ unXMLGenT $ 
-                          do res <- liftIO collector
+                          do res <- lift collector
                              case res of
                                (Success a)      -> handleSuccess a
                                (Failure faults) -> handleFailure faults [ <form action=action method="POST" enctype="multipart/form-data;charset=UTF-8" accept-charset="UTF-8" >
@@ -90,6 +93,35 @@ formletPart prefix action handleSuccess handleFailure form =
                          <% formXML %>
                         </form>
                       ]
+
+lookEnv :: RqData Env
+lookEnv =
+    do formData <- asks fst
+       return $ map (\(name, value) ->
+                case inputFilename value of
+                  Nothing         -> (name, Left $ LU.toString $ inputValue value)
+                  (Just fileName) -> (name, Right $ (File { content = inputValue value
+                                                          , fileName = fileName
+                                                          , F.contentType = F.ContentType { F.ctType       = Happstack.ctType       (inputContentType value)
+                                                                                          , F.ctSubtype    = Happstack.ctSubtype    (inputContentType value)
+                                                                                          , F.ctParameters = Happstack.ctParameters (inputContentType value)
+                                                                                          }
+                                                          }))
+
+                    ) formData
+
+
+handleFailure :: (XMLGenerator m
+                 , EmbedAsChild m c
+                 ) =>
+                (String -> GenChildList m -> a) -> String -> c -> a
+handleFailure pageFromBody faults frmXML =
+    do pageFromBody "Error: Invalid Form Submission" $
+                        <%
+                                [ <% map (\fault -> <p class="fault"><% fault %></p>) faults %>
+                                , <% frmXML %>
+                                ]
+                        %>
 {-
 testPart :: ServerPartT IO XML
 testPart =
@@ -114,7 +146,7 @@ barPart =
     <html>
      <head>
       <title>test page</title>
-     </head>
+  p   </head>
      <body>
        <p>bar</p>
      </body>
