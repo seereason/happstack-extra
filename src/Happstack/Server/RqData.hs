@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, FlexibleInstances, MultiParamTypeClasses #-}
-module Senior.RqData where
+module Happstack.Server.RqData where
 
 import Control.Applicative 			(Applicative((<*>), pure), Alternative((<|>), empty), WrappedMonad(WrapMonad, unwrapMonad))
 import Control.Monad 				(Monad, MonadPlus(mzero))
