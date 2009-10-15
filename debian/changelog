@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.69) unstable; urgency=low
+
+  * RqData: added Alternative instance. Added plural version of look*
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Thu, 15 Oct 2009 12:44:45 -0500
+
 haskell-happstack-extra (0.68) unstable; urgency=low
 
   * formletPart: added support for file uploads

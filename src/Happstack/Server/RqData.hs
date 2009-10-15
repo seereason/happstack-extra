@@ -1,20 +1,21 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, MultiParamTypeClasses #-}
-module Happstack.Server.RqData where
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, FlexibleInstances, MultiParamTypeClasses #-}
+module Senior.RqData where
 
-import Control.Applicative 			(Applicative((<*>), pure))
+import Control.Applicative 			(Applicative((<*>), pure), Alternative((<|>), empty), WrappedMonad(WrapMonad, unwrapMonad))
 import Control.Monad 				(Monad, MonadPlus(mzero))
 import Control.Monad.Reader 			(ReaderT(ReaderT, runReaderT), MonadReader(ask, local), asks, mapReaderT)
 import Control.Monad.Error 			(Error(noMsg, strMsg))
 import qualified Data.ByteString.Lazy.Char8     as L
 import qualified Data.ByteString.Lazy.UTF8      as LU
 import Data.Char 				(toLower)
+import Data.Generics                            (Data, Typeable)
 import Data.Monoid 				(Monoid(mempty, mappend, mconcat))
 import Happstack.Server.Cookie 			(Cookie (cookieValue))
 import Happstack.Server 			(Input(inputValue), Request(rqInputs, rqCookies), ServerMonad, askRq)
 import Happstack.Util.Common                    (readM)
 
 newtype ReaderError r e a = ReaderError { unReaderError :: ReaderT r (Either e) a }
-    deriving (Functor, Monad)
+    deriving (Functor, Monad, MonadPlus)
 
 instance (Error e) => MonadReader r (ReaderError r e) where
     ask = ReaderError ask
@@ -25,6 +26,10 @@ instance (Monoid e, Error e) => Applicative (ReaderError r e) where
     (ReaderError (ReaderT f)) <*> (ReaderError (ReaderT a)) 
         = ReaderError $ ReaderT $ \env -> (f env) `apEither` (a env)
 
+instance (Monoid e, Error e) => Alternative (ReaderError r e) where
+    empty = unwrapMonad empty
+    f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)
+
 apEither :: (Monoid e) => Either e (a -> b) -> Either e a -> Either e b
 apEither (Left errs1) (Left errs2) = Left (errs1 `mappend` errs2)
 apEither (Left errs)  _            = Left errs
@@ -32,6 +37,7 @@ apEither _            (Left errs)  = Left errs
 apEither (Right f)    (Right a)    = Right (f a)
 
 newtype Errors a = Errors { unErrors :: [a] }
+    deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 instance Monoid (Errors a) where
     mempty = Errors []
@@ -60,12 +66,27 @@ lookInput name
            Just i  -> return $ i
            Nothing -> readerError (strMsg name)
 
+lookInputs :: String -> RqData [Input]
+lookInputs name
+    = do inputs <- asks fst
+         return $ lookups name inputs
+
+lookups :: (Eq a) => a -> [(a, b)] -> [b]
+lookups a = map snd . filter ((a ==) . fst)
+
 -- | Gets the named input parameter as a lazy byte string
 lookBS :: String -> RqData L.ByteString
 lookBS = fmap inputValue . lookInput
 
+-- | Gets the named input parameter as a lazy byte string
+lookBSs :: String -> RqData [L.ByteString]
+lookBSs = fmap (map inputValue) . lookInputs
+
 look :: String -> RqData String
 look = fmap LU.toString . lookBS
+
+looks :: String -> RqData [String]
+looks = fmap (map LU.toString) . lookBSs
 
 -- | Gets the named cookie
 -- the cookie name is case insensitive
@@ -84,9 +105,13 @@ lookCookieValue = fmap cookieValue . lookCookie
 readCookieValue :: Read a => String -> RqData a
 readCookieValue name = readM =<< fmap cookieValue (lookCookie name)
 
--- | like look, but Reads for you.
+-- | like look, but Reads for you.n
 lookRead :: Read a => String -> RqData a
 lookRead name = readM =<< look name
+
+-- | like look, but Reads for you.n
+lookReads :: Read a => String -> RqData [a]
+lookReads name = mapM readM =<< looks name
 
 -- | gets all the input parameters, and converts them to a string
 lookPairs :: RqData [(String,String)]
