@@ -20,6 +20,7 @@ module Happstack.Data.IxSet.Store
     , askTriplets
     , askAllHeads
     --, reviseElt
+    , create
     , reviseAndMerge
     --, replaceElts
     , combineHeads
@@ -43,7 +44,7 @@ import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromL
 import Happstack.Data.IxSet.Extra (difference)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
 import Happstack.Data.IxSet.POSet (commonAncestor)
-import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo),
+import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo), initialRevision,
                                       RevisionInfo(RevisionInfo, revision, parentRevisions),
                                       Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
 import Happstack.State (Version)
@@ -194,6 +195,14 @@ reviseAndMerge scrub revs x store =
     where
       xs = map scrub (toList (set @+ revs))
       set = getIxSet store
+
+create :: (Store set elt s) => (elt ->Maybe elt) -> elt -> set -> Failing (set, elt)
+create scrub x store =
+    let (store', i) = getNextId store in
+    let x' = initialRevision i x in
+    case replace scrub [] [x'] store' of
+      Success (store'', [x'']) -> Success (store'', x'')
+      _ -> Failure ["Error in replace"]        
 
 -- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.  Returns the
