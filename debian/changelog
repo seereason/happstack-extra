@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.71) unstable; urgency=low
+
+  * Added timestamp to RevisionInfo
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 21 Oct 2009 14:03:31 -0500
+
 haskell-happstack-extra (0.70) unstable; urgency=low
 
   * Add create function to Happstack.Data.IxSet.Store.

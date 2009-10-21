@@ -7,7 +7,7 @@ module Happstack.Data.IxSet.Revision
     , Revision(..)
     , RevisionInfo(..)
     , changeRevisionInfo
-    , RevisionInfo001(..)
+--    , RevisionInfo001(..)
     , Revisable(..)
     , NodeStatus(..)
     , copyRev
@@ -40,7 +40,9 @@ import Happstack.Data.IxSet
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3)
-import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
+import Happstack.State (EpochMilli, Version(..), Proxy(..), Mode(..), extension, proxy)
+import Happstack.Data.IxSet.Revision.Current
+import Happstack.Data.IxSet.Revision.Instances()
 
 --import Debug.Trace
 
@@ -49,6 +51,7 @@ import Happstack.State (Version(..), Proxy(..), Mode(..), extension, proxy)
 -- of the revisioned type.
 
 -- | Identifier for a item which can have multiple revisions.
+{-
 newtype Ident
     = Ident {unIdent :: Integer}
     deriving (Eq, Ord, Read, Show, Data, Typeable)
@@ -86,7 +89,7 @@ instance Show RevisionInfo where
 
 instance Show Revision where
     show r = show (unIdent (ident r)) ++ "." ++ show (number r)
-
+-}
 -- |Class of values that have a revision info.
 class Revisable a where
     getRevisionInfo :: a -> RevisionInfo
@@ -117,9 +120,10 @@ class Revisable a => RevisableSet s a where
 -}
 
 -- |Initialize the revision info.
-initialRevision :: Revisable a => Ident -> a -> a
-initialRevision newID x =
+initialRevision :: Revisable a => Ident -> EpochMilli -> a -> a
+initialRevision newID creationTime x =
     putRevisionInfo (RevisionInfo {revision = Revision {ident = newID, number = 1},
+                                   created = creationTime,
                                    parentRevisions = [],
                                    nodeStatus = Head}) x
 
@@ -325,30 +329,3 @@ message s x y =
      "\n  commonAncestors -> " ++ intercalate " " (map (showRev . getRevisionInfo) (S.toList (commonAncestors s [x, y]))))
     where rx = getRevisionInfo x
           ry = getRevisionInfo y
-
----------------
--- MIGRATION --
----------------
-
--- |Obsolete version of the RevisionInfo structure.  The isHead field
--- was changed to nodeStatus :: NodeStatus.
-data RevisionInfo001
-    = RevisionInfo001 {revision001 :: Revision, parentRevisions001 :: [Integer], isHead001 :: Bool}
-    deriving (Eq, Ord, Read, Show, Data, Typeable)
-
-instance Migrate RevisionInfo001 RevisionInfo where
-    migrate r =
-        RevisionInfo { revision = revision001 r
-                     , parentRevisions = parentRevisions001 r
-                     , nodeStatus = if isHead001 r then Head else NonHead }
-
-instance Version RevisionInfo001
-$(deriveSerialize ''RevisionInfo001)
-instance Version RevisionInfo where mode = extension 1 (proxy undefined :: Proxy RevisionInfo001) :: Mode RevisionInfo
-$(deriveSerialize ''RevisionInfo)
-instance Version Revision
-$(deriveSerialize ''Revision)
-instance Version NodeStatus
-$(deriveSerialize ''NodeStatus)
-instance Version Ident
-$(deriveSerialize ''Ident)

@@ -45,9 +45,9 @@ import Happstack.Data.IxSet.Extra (difference)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo), initialRevision,
-                                      RevisionInfo(RevisionInfo, revision, parentRevisions),
+                                      RevisionInfo(RevisionInfo, created, revision, parentRevisions),
                                       Revision(ident, number), Ident(Ident), NodeStatus(Head, NonHead), nodeStatus)
-import Happstack.State (Version)
+import Happstack.State (EpochMilli, Version)
 import Prelude hiding (null)
 
 import Debug.Trace
@@ -180,14 +180,14 @@ askTriplets scrub i store =
 
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
-reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> [Revision] -> elt -> set -> Failing (Maybe set, elt, [elt])
-reviseAndMerge scrub revs x store =
+reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> EpochMilli -> [Revision] -> elt -> set -> Failing (Maybe set, elt, [elt])
+reviseAndMerge scrub creationTime revs x store =
     if all isJust xs
-    then case replace1 scrub revs x store of
+    then case replace1 scrub creationTime revs x store of
            Failure ss -> Failure ss
            Success (store', x') ->
                let i = trace ("  reviseAndMerge " ++ show revs) (ident (revision (getRevisionInfo x'))) in
-               case combineHeads scrub i store' of
+               case combineHeads scrub i creationTime store' of
                  Failure ss -> Failure ss
                  Success (Nothing, heads) -> Success (Just store', x', heads)
                  Success (Just store'', heads) -> Success (Just store'', x', heads)
@@ -196,11 +196,11 @@ reviseAndMerge scrub revs x store =
       xs = map scrub (toList (set @+ revs))
       set = getIxSet store
 
-create :: (Store set elt s) => (elt ->Maybe elt) -> elt -> set -> Failing (set, elt)
-create scrub x store =
+create :: (Store set elt s) => (elt ->Maybe elt) -> EpochMilli -> elt -> set -> Failing (set, elt)
+create scrub creationTime x store =
     let (store', i) = getNextId store in
-    let x' = initialRevision i x in
-    case replace scrub [] [x'] store' of
+    let x' = initialRevision i creationTime x in
+    case replace scrub creationTime [] [x'] store' of
       Success (store'', [x'']) -> Success (store'', x'')
       _ -> Failure ["Error in replace"]        
 
@@ -209,8 +209,8 @@ create scrub x store =
 -- new list of heads.  The modified store is returned only if changes
 -- were made.
 combineHeads :: forall set elt s. (Store set elt s) =>
-                (elt -> Maybe elt) -> Ident -> set -> Failing (Maybe set, [elt])
-combineHeads scrub i set =
+                (elt -> Maybe elt) -> Ident -> EpochMilli -> set -> Failing (Maybe set, [elt])
+combineHeads scrub i creationTime set =
     merge False set (askTriplets scrub i set)
     where
       -- No triplets left to merge, return the finalized list of heads
@@ -234,7 +234,7 @@ combineHeads scrub i set =
                    (twoOrThreeWayMerge o' l r') of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Just m ->
-                case replace1 scrub [lrev, rrev] m set of
+                case replace1 scrub creationTime [lrev, rrev] m set of
                   Failure ss -> Failure ss
                   Success (set', _) -> merge True set' (askTriplets scrub i set')
             -- We couldn't merge a triplet, try the next
@@ -339,20 +339,20 @@ prune scrub i store =
 -- or merge several items.  It can also be used to create a branch 
 -- by revising an element that already has children.
 replace1 :: forall set elt s. (Store set elt s, Indexable elt s) =>
-            (elt -> Maybe elt) -> [Revision] -> elt -> set -> Failing (set, elt)
-replace1 scrub parentRevs merged store =
-    case replace scrub parentRevs [merged] store of
+            (elt -> Maybe elt) -> EpochMilli -> [Revision] -> elt -> set -> Failing (set, elt)
+replace1 scrub creationTime parentRevs merged store =
+    case replace scrub creationTime parentRevs [merged] store of
       Success (store', [merged']) -> Success (store', merged')
       Success _ -> Failure ["Unexpected result from replace"]
       Failure msgs -> Failure msgs
 
 -- |Replace zero or more parents with zero or more children.
 replace :: forall set elt s. (Store set elt s, Indexable elt s) =>
-           (elt -> Maybe elt) -> [Revision] -> [elt] -> set -> Failing (set, [elt])
-replace scrub parentRevs children store =
+           (elt -> Maybe elt) -> EpochMilli -> [Revision] -> [elt] -> set -> Failing (set, [elt])
+replace scrub creationTime parentRevs children store =
     case parentIds ++ childIds of
       [] -> Failure ["replace: No parents and no children"]
-      ids@(i : _) | allEqual ids -> replace' scrub i parentRevs children store
+      ids@(i : _) | allEqual ids -> replace' scrub i creationTime parentRevs children store
       _ids -> Failure ["replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds]
     where
       childIds = map (ident . revision . getRevisionInfo) children
@@ -362,8 +362,8 @@ replace scrub parentRevs children store =
 -- replace1, and close.  This fails if we can't access any of the
 -- parents.
 replace' :: forall set elt s. (Store set elt s, Indexable elt s) =>
-            (elt -> Maybe elt) -> Ident -> [Revision] -> [elt] -> set -> Failing (set, [elt])
-replace' scrub i parentRevs children store =
+            (elt -> Maybe elt) -> Ident -> EpochMilli -> [Revision] -> [elt] -> set -> Failing (set, [elt])
+replace' scrub i creationTime parentRevs children store =
     case any isNothing parents of
       True -> Failure ["replace: Permission denied"]
       False -> trace ("  replace': i=" ++ show i ++ ", parents=" ++ show parentRevs ++ ", children=" ++ show childRevs')
@@ -385,6 +385,7 @@ replace' scrub i parentRevs children store =
       children' = map (uncurry putRevisionInfo) (zip childInfo children)
       childInfo :: [RevisionInfo]
       childInfo = map (\ rev -> RevisionInfo {revision = rev,
+                                              created = creationTime,
                                               parentRevisions = map number parentRevs,
                                               nodeStatus = Head}) childRevs'
       childRevs' :: [Revision]
@@ -401,7 +402,7 @@ replace' scrub i parentRevs children store =
 -- |Close some revisions without creating any children.
 close :: forall set elt s. (Store set elt s, Indexable elt s) =>
          (elt -> Maybe elt) -> [Revision] -> set -> Failing (set)
-close scrub revs store = replace scrub revs [] store >>= return . fst
+close scrub revs store = replace scrub 0 revs [] store >>= return . fst
 
 -- Utility functions.
 
