@@ -84,7 +84,7 @@ instance Default RevisionInfo where
 
 instance Show RevisionInfo where
     show r = "(" ++ show (revision r) ++
-             "created: " ++ show (created r) ++
+             " created: " ++ show (created r) ++
              (if nodeStatus r == Head then " (Head)" else " (NonHead)") ++
              " parents: " ++ show (parentRevisions r) ++ ")"
 
