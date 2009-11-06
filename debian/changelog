@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.72) unstable; urgency=low
+
+  * Formlets: Remove charset=utf-8 from enctype. It makes firefox unhappy.
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Thu, 05 Nov 2009 19:16:05 -0600
+
 haskell-happstack-extra (0.71) unstable; urgency=low
 
   * Added timestamp to RevisionInfo

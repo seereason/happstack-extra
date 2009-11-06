@@ -86,7 +86,7 @@ formletPart prefix action handleSuccess handleFailure form =
                           do res <- liftIO collector
                              case res of
                                (Success a)      -> handleSuccess a
-                               (Failure faults) -> handleFailure faults [ <form action=action method="POST" enctype="multipart/form-data;charset=UTF-8" accept-charset="UTF-8" >
+                               (Failure faults) -> handleFailure faults [ <form action=action method="POST" enctype="multipart/form-data" accept-charset="UTF-8" >
                                                                             <% formXML %>
                                                                           </form> ]
 
