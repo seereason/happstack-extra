@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.73) unstable; urgency=low
+
+  * Removed other instance of charset=utf-8
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 07 Nov 2009 13:17:43 -0600
+
 haskell-happstack-extra (0.72) unstable; urgency=low
 
   * Formlets: Remove charset=utf-8 from enctype. It makes firefox unhappy.

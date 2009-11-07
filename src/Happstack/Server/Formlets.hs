@@ -90,7 +90,7 @@ formletPart prefix action handleSuccess handleFailure form =
                                                                             <% formXML %>
                                                                           </form> ]
 
-                      , <form action=action method="POST" enctype="multipart/form-data;charset=UTF-8" accept-charset="UTF-8" >
+                      , <form action=action method="POST" enctype="multipart/form-data" accept-charset="UTF-8" >
                          <% formXML %>
                         </form>
                       ]
