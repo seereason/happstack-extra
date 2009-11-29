@@ -180,14 +180,14 @@ askTriplets scrub i store =
 
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
-reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> EpochMilli -> [Revision] -> elt -> set -> Failing (Maybe set, elt, [elt])
-reviseAndMerge scrub creationTime revs x store =
+reviseAndMerge :: (Store set elt s) => (elt -> Maybe elt) -> (elt -> elt) -> EpochMilli -> [Revision] -> elt -> set -> Failing (Maybe set, elt, [elt])
+reviseAndMerge scrub prep creationTime revs x store =
     if all isJust xs
     then case replace1 scrub creationTime revs x store of
            Failure ss -> Failure ss
            Success (store', x') ->
                let i = trace ("  reviseAndMerge " ++ show revs) (ident (revision (getRevisionInfo x'))) in
-               case combineHeads scrub i creationTime store' of
+               case combineHeads scrub prep i creationTime store' of
                  Failure ss -> Failure ss
                  Success (Nothing, heads) -> Success (Just store', x', heads)
                  Success (Just store'', heads) -> Success (Just store'', x', heads)
@@ -209,8 +209,8 @@ create scrub creationTime x store =
 -- new list of heads.  The modified store is returned only if changes
 -- were made.
 combineHeads :: forall set elt s. (Store set elt s) =>
-                (elt -> Maybe elt) -> Ident -> EpochMilli -> set -> Failing (Maybe set, [elt])
-combineHeads scrub i creationTime set =
+                (elt -> Maybe elt) -> (elt -> elt) -> Ident -> EpochMilli -> set -> Failing (Maybe set, [elt])
+combineHeads scrub prep i creationTime set =
     merge False set (askTriplets scrub i set)
     where
       -- No triplets left to merge, return the finalized list of heads
@@ -231,7 +231,7 @@ combineHeads scrub i creationTime set =
                                  ", l=" ++ show lrev ++
                                  ", r=" ++ show rrev ++
                                  " -> " ++ show (fmap (revision . getRevisionInfo) m))
-                   (twoOrThreeWayMerge o' l r') of
+                   (twoOrThreeWayMerge (fmap prep o') (prep l) (prep r')) of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Just m ->
                 case replace1 scrub creationTime [lrev, rrev] m set of

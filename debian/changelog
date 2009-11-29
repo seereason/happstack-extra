@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.74) unstable; urgency=low
+
+  * Add an argument to reviseAndMerge and combineHeads to prepare the
+    elements before merging, to remove stuff we don't care whether it
+    matches.
+
+ -- David Fox <dsf@seereason.com>  Sun, 29 Nov 2009 10:45:48 -0800
+
 haskell-happstack-extra (0.73) unstable; urgency=low
 
   * Removed other instance of charset=utf-8
