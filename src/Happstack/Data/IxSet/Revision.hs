@@ -26,21 +26,16 @@ module Happstack.Data.IxSet.Revision
     , eqEx
     ) where
 
---import Control.Applicative.Error (Failing(..))
 import qualified Data.ByteString.Char8 as B
 import Data.Generics
 import Data.List (tails, intercalate)
---import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
-import Happstack.Data (Default(..), deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
+--import Happstack.Data (Default(..), deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
 import Happstack.Data.IxSet
---import Text.Formlets (xml, check)
---import Text.Formlets.Generics.Instances ()
---import Text.Formlets.Generics.Markup.Types (Markup(..))
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
 import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3)
-import Happstack.State (EpochMilli, Version(..), Proxy(..), Mode(..), extension, proxy)
+import Happstack.State (EpochMilli)
 import Happstack.Data.IxSet.Revision.Current
 import Happstack.Data.IxSet.Revision.Instances()
 

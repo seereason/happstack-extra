@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable, MultiParamTypeClasses, TemplateHaskell #-}
+{-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Data.IxSet.Revision.Instances where
 
 import Data.Generics
-import Happstack.Data (Default(..), Version(..), Proxy(..), Mode(..), proxy, extension, deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
+import Happstack.Data (Version(..), Proxy(..), Mode(..), proxy, extension, deriveSerialize, Migrate(..))
 import qualified Happstack.Data.IxSet.Revision.Old1 as O1
 import qualified Happstack.Data.IxSet.Revision.Current as C
 
