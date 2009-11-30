@@ -220,18 +220,7 @@ combineHeads scrub prep i creationTime set =
           where heads = toList ((getIxSet set @= i) @= Head)
       -- Try to merge each of the triplets in turn
       merge merged set (Just (Triplet o@(Just _) l r) : more) =
-          let copyRev s d = putRevisionInfo (getRevisionInfo s) d
-              o' = fmap (copyRev l) o
-              r' = copyRev l r
-              orev = fmap (revision . getRevisionInfo) o
-              lrev = revision (getRevisionInfo l)
-              rrev = revision (getRevisionInfo r) in
-          case traceThis (\ m -> "  combineHeads threeWayMerge " ++
-                                 "o=" ++ show orev ++
-                                 ", l=" ++ show lrev ++
-                                 ", r=" ++ show rrev ++
-                                 " -> " ++ show (fmap (revision . getRevisionInfo) m))
-                   (twoOrThreeWayMerge (fmap prep o') (prep l) (prep r')) of
+          case t (twoOrThreeWayMerge (fmap prep' o) (prep' l) (prep' r)) of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Just m ->
                 case replace1 scrub creationTime [lrev, rrev] m set of
@@ -239,10 +228,23 @@ combineHeads scrub prep i creationTime set =
                   Success (set', _) -> merge True set' (askTriplets scrub i set')
             -- We couldn't merge a triplet, try the next
             Nothing -> merge merged set more
+          where
+            orev = fmap (revision . getRevisionInfo) o
+            lrev = revision (getRevisionInfo l)
+            rrev = revision (getRevisionInfo r)
+            t = traceThis (\ m -> "  combineHeads threeWayMerge " ++
+                                  "o=" ++ show orev ++
+                                  ", l=" ++ show lrev ++
+                                  ", r=" ++ show rrev ++
+                                  " -> " ++ show (fmap (revision . getRevisionInfo) m))
       -- Permission failure
       merge _ _ (Just (Triplet _ l r) : _) =
           Failure ["combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r]]
       merge merged set (Nothing : more) = merge merged set more
+      prep' = clearRev . prep
+
+clearRev :: Revisable a => a -> a
+clearRev x = putRevisionInfo (defaultValue {revision = defaultValue {ident = ident (revision (getRevisionInfo x))}}) x
 
 -- |Change the node status of a revision to Head or NonHead.
 setStatus :: forall set elt s. (Store set elt s) =>
