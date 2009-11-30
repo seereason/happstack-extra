@@ -35,12 +35,13 @@ module Happstack.Data.IxSet.Store
 import Control.Applicative.Error (Failing(Success, Failure))
 import Data.Data (Data)
 import Data.Function (on)
-import Data.List (tails, groupBy, sortBy)
+import Data.Generics (gshow)
+import Data.List (tails, groupBy, sortBy, intercalate)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, isNothing)
 import Data.Typeable (Typeable1)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
-import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null)
+import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null, size)
 import Happstack.Data.IxSet.Extra (difference)
 import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
 import Happstack.Data.IxSet.POSet (commonAncestor)
@@ -202,7 +203,8 @@ create scrub creationTime x store =
     let x' = initialRevision i creationTime x in
     case replace scrub creationTime [] [x'] store' of
       Success (store'', [x'']) -> Success (store'', x'')
-      _ -> Failure ["Error in replace"]        
+      Success (_, _) -> Failure ["replace failed"]
+      Failure msgs -> Failure msgs
 
 -- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.  Returns the
@@ -368,8 +370,9 @@ replace' :: forall set elt s. (Store set elt s, Indexable elt s) =>
 replace' scrub i creationTime parentRevs children store =
     case any isNothing parents of
       True -> Failure ["replace: Permission denied"]
-      False -> trace ("  replace': i=" ++ show i ++ ", parents=" ++ show parentRevs ++ ", children=" ++ show childRevs')
-                 (Success (store'', children'))
+      False -> if size set'' == size set' + length children'
+               then Success (store'', children')
+               else Failure ["Failed to insert " ++ show childRevs' ++ " into " ++ gshowSet set' ++ ": result was " ++ gshowSet set'']
     where
       store'' :: set
       store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'
@@ -437,6 +440,11 @@ _showTriplet :: Revisable a => Triplet a -> String
 _showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision . getRevisionInfo) o ++
                                ", l=" ++ (show . revision . getRevisionInfo $ l) ++
                                ", r=" ++ (show . revision . getRevisionInfo $ r) ++ "}"
+
+gshowSet :: (Ord a, Data a) => IxSet a -> String
+gshowSet s = gshowList (toList s)
+gshowList :: (Data a) => [a] -> [Char]
+gshowList l = "[" ++ intercalate ", " (map gshow l) ++ "]"
 
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
