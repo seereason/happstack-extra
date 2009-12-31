@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.75) unstable; urgency=low
+
+  * Change optimize flag to -O0 to work around weak symbol bug
+
+ -- David Fox <dsf@seereason.com>  Thu, 31 Dec 2009 11:43:34 -0800
+
 haskell-happstack-extra (0.74) unstable; urgency=low
 
   * Add an argument to reviseAndMerge and combineHeads to prepare the
