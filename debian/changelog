@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.76) unstable; urgency=low
+
+  * Remove -O0, bug seems to be fixed in ghc 6.13.
+
+ -- David Fox <dsf@seereason.com>  Wed, 06 Jan 2010 09:22:59 -0800
+
 haskell-happstack-extra (0.75) unstable; urgency=low
 
   * Change optimize flag to -O0 to work around weak symbol bug

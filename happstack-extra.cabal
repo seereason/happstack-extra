@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.74
+Version:          0.76
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -25,7 +25,6 @@ Build-Depends:    base >= 4, bytestring, containers, filepath, html, mtl, networ
                   happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, happstack,
                   RJson, Extra >= 1.27, applicative-extras >= 0.1.5, formlets, feed, xml, pandoc, html-entities
 hs-source-dirs:   src
-GHC-options:      -O0
 
 Build-Type:       Simple
 Category:         Web, Language
