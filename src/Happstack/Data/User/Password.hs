@@ -54,3 +54,7 @@ newPassword :: String -> IO Password
 newPassword password =
     do salt <- genSalt
        return (Password salt (doHash salt password))
+
+-- |a 'Password' for which 'checkPassword' will always return 'False'
+lockedPassword :: Password
+lockedPassword = Password (Salt "") (PasswordHash "")
