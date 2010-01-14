@@ -19,6 +19,7 @@ module Happstack.Data.IxSet.Store
     , askAllRevs
     , askTriplets
     , askAllHeads
+    , askAll
     --, reviseElt
     , create
     , reviseAndMerge
@@ -143,6 +144,10 @@ askHeads scrub i store =
 -- |Return all the heads for all the idents in the store.
 askAllHeads :: (Store set elt s) => (elt -> Maybe elt) -> set -> [Maybe elt]
 askAllHeads scrub = map scrub . toList . (\ s -> s @= Head) . getIxSet
+
+-- |Return all the revisions for all the idents in the store.
+askAll :: (Store set elt s) => (elt -> Maybe elt) -> set -> [Maybe elt]
+askAll scrub = map scrub . toList . getIxSet
 
 -- |Return an item's list of (original, left, right) triplets - the
 -- list of pairs of head elements, with the common ancestor.

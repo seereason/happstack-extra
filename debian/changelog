@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.77) unstable; urgency=low
+
+  * Add an askAll method to the Store module.
+
+ -- David Fox <dsf@seereason.com>  Thu, 14 Jan 2010 04:44:14 -0800
+
 haskell-happstack-extra (0.76) unstable; urgency=low
 
   * Remove -O0, bug seems to be fixed in ghc 6.13.
