@@ -35,7 +35,7 @@ import qualified Data.Set as S
 import Happstack.Data.IxSet
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3, GB, GM)
+import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3, GM)
 import Happstack.State (EpochMilli)
 import Happstack.Data.IxSet.Revision.Current
 import Happstack.Data.IxSet.Revision.Instances()
@@ -210,7 +210,7 @@ combine3 conflict eq original left right =
     where rev = getRevisionInfo original
 
 conflicts :: forall a. (Revisable a, Data a) =>
-             GM -> (forall x. Data x => x -> x -> x -> Failing x) -> (forall x. Data x => x -> x -> Failing x) -> a -> a -> a -> Failing a
+             GM -> (forall x. Data x => [String] -> x -> x -> x -> Failing x) -> (forall x. Data x => x -> x -> Failing x) -> a -> a -> a -> Failing a
 conflicts q conflict eq original left right =
     gzipBut3 merge q original left right
     where
@@ -224,7 +224,7 @@ conflicts q conflict eq original left right =
                   Failure msgs2 ->
                       case eq l r of
                         Success _ -> Success l
-                        Failure msgs3 -> conflict {- (msgs1 ++ msgs2 ++ msgs3) -} o l r
+                        Failure msgs3 -> conflict (msgs1 ++ msgs2 ++ msgs3) o l r
 
 -- Example implementation of the eq argument to combine3.
 eqEx :: GenericQ (GenericQ Bool)

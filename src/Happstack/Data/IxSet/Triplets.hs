@@ -6,7 +6,7 @@ module Happstack.Data.IxSet.Triplets
     , gzip3
     , gzipQ3
     , gzipBut3
-    , gzipBut3'
+    -- , gzipBut3'
     , extQ2
     , extQ3
     , extT3
@@ -21,11 +21,10 @@ module Happstack.Data.IxSet.Triplets
 
 import Prelude hiding (GT)
 import Control.Applicative.Error
-import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, orElse, gshow,
+import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, gshow,
                       unGT, GenericT, GenericT'(GT), gmapAccumT,
                       unGM, GenericM, GenericM'(GM), gmapAccumM,
                       unGQ, GenericQ, GenericQ'(GQ), gmapQ)
-import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 
 import Debug.Trace
@@ -188,6 +187,7 @@ gzipBut3 merge continue x y z =
              Success _ -> gzipWithM3 (gzip3' merge) x y z
              Failure msgs -> Failure msgs
 
+{-
 gzipBut3' :: (Int -> PM) -> (Int -> GM) -> PM
 gzipBut3' merge continue x y z =
     gzip3' 0 merge' x y z
@@ -205,6 +205,7 @@ gzipBut3' merge continue x y z =
            case continue n x y z of
              Success _ -> gzipWithM3 (gzip3' (n+1) merge) x y z
              Failure msgs -> Failure msgs
+-}
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r

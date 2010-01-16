@@ -12,9 +12,7 @@ import Data.Data (Data, toConstr)
 import Data.Generics (DataRep(AlgRep), dataTypeRep, dataTypeOf, gmapQ, extQ)
 import qualified Data.Generics as G (geq, gshow)
 import Data.List (intercalate)
-import Data.Maybe (isJust)
---import Debug.Trace
-import Happstack.Data.IxSet.Triplets (GB, GM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
+import Happstack.Data.IxSet.Triplets (GM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3)
 
 twoOrThreeWayMerge :: forall x. (Data x) => (Maybe x) -> x -> x -> Failing x
 twoOrThreeWayMerge Nothing _ _ = Failure ["Unimplemented: two way merge"]
@@ -36,12 +34,12 @@ merge o l r =
          else if eqShallow l r
               then Success l
               else if primitive o
-                   then if eqDeep l r then Success l else Failure ["Inequality: l=" ++ gshow l ++ " r=" ++ gshow r]
+                   then if eqDeep l r then Success l else Failure []
                    else if primitive l
-                        then if eqDeep o r then Success l else Failure ["Inequality: o=" ++ gshow o ++ " r=" ++ gshow r]
+                        then if eqDeep o r then Success l else Failure []
                         else if primitive r
-                             then if eqDeep o l then Success r else Failure ["Inequality: o=" ++ gshow o ++ " l=" ++ gshow l]
-                             else Failure ["Inequality: o=" ++ gshow o ++ " l=" ++ gshow l ++ " r=" ++ gshow r]
+                             then if eqDeep o l then Success r else Failure []
+                             else Failure []
 
 -- This function is called when a potential conflict is detected - the
 -- shallow tests have all returned false.
@@ -52,15 +50,15 @@ merge o l r =
 -- match, or if we encounter other values which we
 -- consider primitives, such as strings.
 continue :: GM
-continue x y z =
+continue o l r =
     -- We need to actually pass the x y z arguments here, if
     -- we try to curry it we get a "less polymorphic" error.
-    (gzipQ3 `extQ3` stringFail `extQ3` bsFail) x y z 
+    (gzipQ3 `extQ3` stringFail `extQ3` bsFail) o l r
     where
       stringFail :: String -> String -> String -> Failing a
-      stringFail a b c = Failure ["stringFail: " ++ intercalate ", " (map show [a, b, c])]
+      stringFail o l r = Failure ["String conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
       bsFail :: B.ByteString -> B.ByteString -> B.ByteString -> Failing a
-      bsFail a b c = Failure ["bsFail:" ++ intercalate ", " (map show [a, b, c])]
+      bsFail o l r = Failure ["Bytestring conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
 
 -- |Shallow equalify function.  This will return False for records
 -- whose fields might differ.  If we simply compared the constructors
