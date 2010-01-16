@@ -1,31 +1,33 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, Rank2Types #-}
 {-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Merge
     ( threeWayMerge
     , twoOrThreeWayMerge
-    -- , threeWayMerge'
+    , continue
     ) where
 
 import Control.Applicative.Error
 import qualified Data.ByteString as B
 import Data.Data (Data, toConstr)
-import Data.Generics (DataRep(AlgRep), dataTypeRep, dataTypeOf, gmapQ, extQ)
-import qualified Data.Generics as G (geq, gshow)
-import Data.List (intercalate)
+import Data.Generics (DataRep(AlgRep), Typeable, dataTypeRep, dataTypeOf, gmapQ, extQ)
+import qualified Data.Generics as G (geq)
+--import Data.List (intercalate)
 import Happstack.Data.IxSet.Triplets (GM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3)
 
-twoOrThreeWayMerge :: forall x. (Data x) => (Maybe x) -> x -> x -> Failing x
-twoOrThreeWayMerge Nothing _ _ = Failure ["Unimplemented: two way merge"]
-twoOrThreeWayMerge (Just o) l r = threeWayMerge o l r
+twoOrThreeWayMerge :: forall x. (Data x) => GM -> (Maybe x) -> x -> x -> Failing x
+twoOrThreeWayMerge _ Nothing _ _ = Failure ["Unimplemented: two way merge"]
+twoOrThreeWayMerge continue (Just o) l r = threeWayMerge continue o l r
 
 -- |Untraced version, but we still trace failures via continue'.
-threeWayMerge :: forall x. (Data x) => x -> x -> x -> Failing x
-threeWayMerge o l r = gzipBut3 merge continue o l r
+threeWayMerge :: forall x. (Data x) => GM -> x -> x -> x -> Failing x
+threeWayMerge continue o l r = gzipBut3 merge continue o l r
 
 -- |If this function returns Nothing the zip will continue by trying
 -- to zip the individual elements.
+-- 
+-- It seems like all these deep equality calls are wasteful.  Not sure
+-- how to avoid this.
 merge :: forall a. (Data a) => a -> a -> a -> Failing a
--- merge = mergeBy conflict eqShallow
 merge o l r =
     if eqShallow o l
     then Success r
@@ -41,24 +43,30 @@ merge o l r =
                              then if eqDeep o l then Success r else Failure []
                              else Failure []
 
--- This function is called when a potential conflict is detected - the
--- shallow tests have all returned false.
---conflict :: PM
---conflict _ _ _ = Nothing
-
--- We stop the traversal if the constructors don't
--- match, or if we encounter other values which we
--- consider primitives, such as strings.
+-- |This function is called by Triplets.gzipBut3 after the
+-- straightforward merge fails.  This happens when we encountere
+-- unequal primitive values or we can't find a three way merge using
+-- deep equality.  In this case, continue is called to decide whether
+-- to keep traversing the values.  If the arguments are Strings or
+-- ByteStrings the stringFail or bsFail functions will return a
+-- Failure, indicating there was a conflict.  Otherwise gzipQ3 will
+-- see if the constructors match, in which case we will continue to
+-- try to merge the individual fields of the three values.
+--
+-- This could be extended to prevent traversal of other types we want
+-- to consider primitive, which is why it is passed to
+-- twoOrThreeWayMerge rather than being called from there directly.
 continue :: GM
 continue o l r =
-    -- We need to actually pass the x y z arguments here, if
+    -- We need to actually pass the three arguments here, if
     -- we try to curry it we get a "less polymorphic" error.
     (gzipQ3 `extQ3` stringFail `extQ3` bsFail) o l r
-    where
-      stringFail :: String -> String -> String -> Failing a
-      stringFail o l r = Failure ["String conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
-      bsFail :: B.ByteString -> B.ByteString -> B.ByteString -> Failing a
-      bsFail o l r = Failure ["Bytestring conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
+
+stringFail :: String -> String -> String -> Failing a
+stringFail o l r = Failure ["String conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
+
+bsFail :: B.ByteString -> B.ByteString -> B.ByteString -> Failing a
+bsFail o l r = Failure ["Bytestring conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
 
 -- |Shallow equalify function.  This will return False for records
 -- whose fields might differ.  If we simply compared the constructors
@@ -131,11 +139,13 @@ prim x =
 --      bsShow :: B.ByteString -> String
 --      bsShow x = show x
 
+{-
 gshow :: forall a. (Data a) => a -> String
 gshow x = (G.gshow `extQ` bsShow) x
     where
       bsShow :: B.ByteString -> String
       bsShow x = show x
+-}
 
 _pre :: Int -> String
 _pre n = replicate n ' '

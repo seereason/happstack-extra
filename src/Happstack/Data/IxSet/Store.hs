@@ -44,7 +44,7 @@ import Data.Typeable (Typeable1)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null, size)
 import Happstack.Data.IxSet.Extra (difference)
-import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge)
+import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge, continue)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo), initialRevision,
                                       RevisionInfo(RevisionInfo, created, revision, parentRevisions),
@@ -227,7 +227,7 @@ combineHeads scrub prep i creationTime set =
           where heads = toList ((getIxSet set @= i) @= Head)
       -- Try to merge each of the triplets in turn
       merge merged set (Just (Triplet o@(Just _) l r) : more) =
-          case t (twoOrThreeWayMerge (fmap prep' o) (prep' l) (prep' r)) of
+          case t (twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r)) of
             -- We merged a triplet, set the merged flag and re-start the combine process
             Success m ->
                 case replace1 scrub creationTime [lrev, rrev] m set of
