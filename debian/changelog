@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.78) unstable; urgency=low
+
+  * Convert the three way merge code to return Failing instead of Maybe.
+    This allows us to return messages about conflicts to use in the UI.
+
+ -- David Fox <dsf@seereason.com>  Sat, 16 Jan 2010 06:42:43 -0800
+
 haskell-happstack-extra (0.77) unstable; urgency=low
 
   * Add an askAll method to the Store module.

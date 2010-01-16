@@ -229,12 +229,12 @@ combineHeads scrub prep i creationTime set =
       merge merged set (Just (Triplet o@(Just _) l r) : more) =
           case t (twoOrThreeWayMerge (fmap prep' o) (prep' l) (prep' r)) of
             -- We merged a triplet, set the merged flag and re-start the combine process
-            Just m ->
+            Success m ->
                 case replace1 scrub creationTime [lrev, rrev] m set of
                   Failure ss -> Failure ss
                   Success (set', _) -> merge True set' (askTriplets scrub i set')
             -- We couldn't merge a triplet, try the next
-            Nothing -> merge merged set more
+            Failure msgs -> merge merged set more
           where
             orev = fmap (revision . getRevisionInfo) o
             lrev = revision (getRevisionInfo l)

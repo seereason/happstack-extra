@@ -20,10 +20,26 @@ module Happstack.Data.IxSet.Triplets
     ) where
 
 import Prelude hiding (GT)
-import Data.Generics
+import Control.Applicative.Error
+import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, orElse,
+                      unGT, GenericT, GenericT'(GT), gmapAccumT,
+                      unGM, GenericM, GenericM'(GM), gmapAccumM,
+                      unGQ, GenericQ, GenericQ'(GQ), gmapQ)
 import Data.Maybe (fromMaybe)
 
 import Debug.Trace
+
+cast' :: (Typeable a, Typeable b) => a -> Failing b
+cast' = maybe (Failure ["cast"]) Success . cast
+
+orElse' :: Failing a -> Failing a -> Failing a
+orElse' a b =
+    case a of
+      Success x -> Success x
+      Failure ma ->
+          case b of
+            Success x -> Success x
+            Failure mb -> Failure (ma ++ mb)
 
 -- As originally defined: Twin map for transformation
 
@@ -107,10 +123,10 @@ gzipWithM3 f x y z =
 
 type GB = GenericQ (GenericQ (GenericQ Bool))                   -- Generic Bool Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Bool
-type GM = GenericQ (GenericQ (GenericM Maybe))                  -- Generic Maybe Query
+type GM = GenericQ (GenericQ (GenericM Failing))                -- Generic Maybe Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
-type PB = (forall x. Data x => x -> x -> x -> Bool)
-type PM = (forall x. Data x => x -> x -> x -> Maybe x)          -- Polymorphic Maybe Query
+type PB = forall x. Data x => x -> x -> x -> Bool
+type PM = forall x. Data x => x -> x -> x -> Failing x        -- Polymorphic Failing Query
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
 -- over the "elements" of three instances of a type.  The function
@@ -130,8 +146,11 @@ gzip3 f = gzipBut3 f gzipQ3
 
 -- |This is the minimal condition for recursing into a value - the
 -- constructors must all match.
-gzipQ3 :: GB
-gzipQ3 x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
+gzipQ3 :: GM
+gzipQ3 x y z = 
+    if and [toConstr x == toConstr y, toConstr y == toConstr z]
+    then Success undefined
+    else Failure ["gzipQ3"]
 
 -- |This function adds a test to limit the recursion of gzip3.  For
 -- example, with the merge function mentioned above you might want to
@@ -150,7 +169,7 @@ gzipQ3 x y z = and [toConstr x == toConstr y, toConstr y == toConstr z]
 -- 
 -- this can also save a lot of time examining all the heads and tails
 -- of every string.
-gzipBut3 :: PM -> GB -> PM
+gzipBut3 :: PM -> GM -> PM
 gzipBut3 merge continue x y z =
     gzip3' merge' x y z
     where
@@ -159,16 +178,16 @@ gzipBut3 merge continue x y z =
       -- might return Nothing.  In those cases we call gzipWithM3 to
       -- traverse the sub-elements.
       merge' :: GM
-      merge' x y z = cast x >>= \x' -> cast y >>= \y' -> merge x' y' z
+      merge' x y z = cast' x >>= \x' -> cast' y >>= \y' -> merge x' y' z
       gzip3' :: GM -> GM
       gzip3' merge x y z =
           merge x y z
-         `orElse`
-           if continue x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
-           then gzipWithM3 (gzip3' merge) x y z
-           else Nothing
+         `orElse'`
+           case continue x y z of
+             Success _ -> gzipWithM3 (gzip3' merge) x y z
+             Failure msgs -> Failure msgs
 
-gzipBut3' :: (Int -> PM) -> (Int -> GB) -> PM
+gzipBut3' :: (Int -> PM) -> (Int -> GM) -> PM
 gzipBut3' merge continue x y z =
     gzip3' 0 merge' x y z
     where
@@ -177,14 +196,14 @@ gzipBut3' merge continue x y z =
       -- might return Nothing.  In those cases we call gzipWithM3 to
       -- traverse the sub-elements.
       merge' :: Int -> GM
-      merge' n x y z = cast x >>= \x' -> cast y >>= \y' -> merge n x' y' z
+      merge' n x y z = cast' x >>= \x' -> cast' y >>= \y' -> merge n x' y' z
       gzip3' :: Int -> (Int -> GM) -> GM
       gzip3' n merge x y z =
           merge n x y z
-         `orElse`
-           if continue n x y z {- and [toConstr x == toConstr y, toConstr y == toConstr z] -}
-           then gzipWithM3 (gzip3' (n+1) merge) x y z
-           else Nothing
+         `orElse'`
+           case continue n x y z of
+             Success _ -> gzipWithM3 (gzip3' (n+1) merge) x y z
+             Failure msgs -> Failure msgs
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r
@@ -215,18 +234,18 @@ mkQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x
 -- (\ _ _ _ -> Nothing), while eq could be geq, but it could also
 -- just return false for more complex datatypes that we don't want
 -- to repeatedly traverse.
-mergeBy :: forall a. (a -> a -> a -> Maybe a) -> (a -> a -> Bool) -> a -> a -> a -> Maybe a
+mergeBy :: forall a. (a -> a -> a -> Failing a) -> (a -> a -> Bool) -> a -> a -> a -> Failing a
 mergeBy conflict eq original left right =
-    if eq original left then Just right
-    else if eq original right then Just left
-         else if eq left right then Just left
+    if eq original left then Success right
+    else if eq original right then Success left
+         else if eq left right then Success left
               else conflict original left right
 
-mergeByM :: forall a m. (Monad m) => (a -> a -> a -> m (Maybe a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Maybe a)
+mergeByM :: forall a m. (Monad m) => (a -> a -> a -> m (Failing a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Failing a)
 mergeByM conflict eq original left right =
-    if eq original left then return (Just right)
-    else if eq original right then return (Just left)
-         else if eq left right then return (Just left)
+    if eq original left then return (Success right)
+    else if eq original right then return (Success left)
+         else if eq left right then return (Success left)
               else conflict original left right
 
 _traceThis :: (a -> String) -> a -> a
