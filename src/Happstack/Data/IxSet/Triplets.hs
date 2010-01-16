@@ -21,10 +21,11 @@ module Happstack.Data.IxSet.Triplets
 
 import Prelude hiding (GT)
 import Control.Applicative.Error
-import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, orElse,
+import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, orElse, gshow,
                       unGT, GenericT, GenericT'(GT), gmapAccumT,
                       unGM, GenericM, GenericM'(GM), gmapAccumM,
                       unGQ, GenericQ, GenericQ'(GQ), gmapQ)
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 
 import Debug.Trace
@@ -150,7 +151,7 @@ gzipQ3 :: GM
 gzipQ3 x y z = 
     if and [toConstr x == toConstr y, toConstr y == toConstr z]
     then Success undefined
-    else Failure ["gzipQ3"]
+    else Failure ["Conflict: x=" ++ gshow x ++ " y=" ++ gshow y ++ " z=" ++ gshow z]
 
 -- |This function adds a test to limit the recursion of gzip3.  For
 -- example, with the merge function mentioned above you might want to

@@ -17,7 +17,7 @@ import Data.Maybe (isJust)
 import Happstack.Data.IxSet.Triplets (GB, GM, mkQ2, extQ2, extQ3, gzipQ3, gzipBut3, gzipBut3')
 
 twoOrThreeWayMerge :: forall x. (Data x) => (Maybe x) -> x -> x -> Failing x
-twoOrThreeWayMerge Nothing _ _ = error "Unimplemented: two way merge"
+twoOrThreeWayMerge Nothing _ _ = Failure ["Unimplemented: two way merge"]
 twoOrThreeWayMerge (Just o) l r = threeWayMerge o l r
 
 -- |Untraced version, but we still trace failures via continue'.
@@ -36,12 +36,12 @@ merge o l r =
          else if eqShallow l r
               then Success l
               else if primitive o
-                   then if eqDeep l r then Success l else Failure []
+                   then if eqDeep l r then Success l else Failure ["Inequality: l=" ++ gshow l ++ " r=" ++ gshow r]
                    else if primitive l
-                        then if eqDeep o r then Success l else Failure []
+                        then if eqDeep o r then Success l else Failure ["Inequality: o=" ++ gshow o ++ " r=" ++ gshow r]
                         else if primitive r
-                             then if eqDeep o l then Success r else Failure []
-                             else Failure []
+                             then if eqDeep o l then Success r else Failure ["Inequality: o=" ++ gshow o ++ " l=" ++ gshow l]
+                             else Failure ["Inequality: o=" ++ gshow o ++ " l=" ++ gshow l ++ " r=" ++ gshow r]
 
 -- This function is called when a potential conflict is detected - the
 -- shallow tests have all returned false.

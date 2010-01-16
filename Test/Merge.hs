@@ -16,7 +16,7 @@ tests = [test1, test2, test3, test4, test5, test6, test7]
 --   4. Test things that seem to conflict at the top level but end up merging lower down
 
 -- Make sure strings don't get merged character by character
-test1 = TestCase $ assertEqual "string conflict" (Failure ["stringFail: \"pup\", \"cup\", \"pun\""]) $
+test1 = TestCase $ assertEqual "string conflict" (Failure ["Inequality: l=\"cup\" r=\"pun\"","stringFail: \"pup\", \"cup\", \"pun\""]) $
         -- trace "\n\nStarting test1" (return ()) >>
         threeWayMerge "pup" "cup" "pun"
 
@@ -39,7 +39,7 @@ test5 = TestCase $ assertEqual "merging tuple" (Success (1, "hello", 2, "world")
         -- trace "\n\nStarting test5" (return ()) >> 
         threeWayMerge (1, "unedited", 2, "unedited") (1, "hello", 2, "unedited") (1, "unedited", 2, "world")
 
-test6 = TestCase $ assertEqual "merging bytestrings" (Failure ["bsFail:\"pup\", \"cup\", \"pun\""]) $
+test6 = TestCase $ assertEqual "merging bytestrings" (Failure ["Inequality: l=\"cup\" r=\"pun\"","bsFail:\"pup\", \"cup\", \"pun\""]) $
         -- trace "\n\nStarting test6" (return ()) >> 
         threeWayMerge (B.fromString "pup") (B.fromString "cup") (B.fromString "pun")
 
