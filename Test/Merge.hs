@@ -15,8 +15,8 @@ tests = [test1, test2, test3, test4, test5, test6, test7]
 continue1 :: GM
 continue1 o l r = (gzipQ3 `extQ3` stringFail) o l r
 
-stringFail :: String -> String -> String -> Failing a
-stringFail o l r = Failure ["String conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
+stringFail :: Monad m => String -> String -> String -> m a
+stringFail o l r = fail ("String conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r)
 
 
 -- We want to know
@@ -50,8 +50,8 @@ test5 = TestCase $ assertEqual "merging tuple" (Success (1, "hello", 2, "world")
 continue2 :: GM
 continue2 o l r = (gzipQ3 `extQ3` bsFail) o l r
 
-bsFail :: B.ByteString -> B.ByteString -> B.ByteString -> Failing a
-bsFail o l r = Failure ["Bytestring conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r]
+bsFail :: Monad m => B.ByteString -> B.ByteString -> B.ByteString -> m a
+bsFail o l r = fail ("Bytestring conflict: o=" ++ show o ++ ", l=" ++ show l ++ ", r=" ++ show r)
 
 test6 = TestCase $ assertEqual "merging bytestrings" (Failure ["Bytestring conflict: o=\"pup\", l=\"cup\", r=\"pun\""]) $
         -- trace "\n\nStarting test6" (return ()) >> 

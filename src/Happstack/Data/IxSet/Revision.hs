@@ -21,12 +21,13 @@ module Happstack.Data.IxSet.Revision
     , combineInfo
     , showRev
     , combine3
-    , combine3M
+    -- , combine3M
     , conflicts
     , eqEx
     ) where
 
 import Control.Applicative.Error
+import Control.Monad (MonadPlus(mplus))
 import qualified Data.ByteString.Char8 as B
 import Data.Generics
 import Data.List (tails, intercalate)
@@ -35,7 +36,7 @@ import qualified Data.Set as S
 import Happstack.Data.IxSet
 import Happstack.Data.IxSet.POSet
 import qualified Happstack.Data.IxSet.POSet as P
-import Happstack.Data.IxSet.Triplets (mergeBy, mergeByM, mkQ2, extQ2, gzipBut3, GM)
+import Happstack.Data.IxSet.Triplets (mergeBy, {-mergeByM,-} mkQ2, extQ2, gzipBut3, GM)
 import Happstack.State (EpochMilli)
 import Happstack.Data.IxSet.Revision.Current
 import Happstack.Data.IxSet.Revision.Instances()
@@ -209,22 +210,24 @@ combine3 conflict eq original left right =
     mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
 
-conflicts :: forall a. (Revisable a, Data a) =>
-             GM -> (forall x. Data x => [String] -> x -> x -> x -> Failing x) -> (forall x. Data x => x -> x -> Failing x) -> a -> a -> a -> Failing a
+conflicts :: forall m a. (MonadPlus m, Revisable a, Data a) =>
+             GM -> (forall m x. (MonadPlus m, Data x) => [String] -> x -> x -> x -> m x) -> (forall m x. (MonadPlus m, Data x) => x -> x -> m x) -> a -> a -> a -> m a
 conflicts q conflict eq original left right =
     gzipBut3 merge q original left right
     where
-      merge :: forall x. Data x => x -> x -> x -> Failing x
-      merge o l r = 
+      merge :: forall m x. (MonadPlus m, Data x) => x -> x -> x -> m x
+      merge o l r = (eq o l >> return r) `mplus` (eq o r >> return l) `mplus` (eq l r >> return l)
+{-
           case eq o l of
-            Success _ -> Success r
+            Success _ -> return r
             Failure msgs1 ->
                 case eq o r of
-                  Success _ -> Success l
+                  Success _ -> return l
                   Failure msgs2 ->
                       case eq l r of
-                        Success _ -> Success l
+                        Success _ -> return l
                         Failure msgs3 -> conflict (msgs1 ++ msgs2 ++ msgs3) o l r
+-}
 
 -- Example implementation of the eq argument to combine3.
 eqEx :: GenericQ (GenericQ Bool)
@@ -241,10 +244,12 @@ eqEx x y =
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
 
+{-
 combine3M :: forall m a. (Revisable a, Monad m) => (a -> a -> a -> m (Failing a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Failing a)
 combine3M conflict eq original left right =
     mergeByM conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
+-}
 
 -- |Use combine3 to merge as many of the elements in heads as
 -- possible, returning the new list.  Consider the mergeable relation

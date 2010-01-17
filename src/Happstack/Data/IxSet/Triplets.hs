@@ -15,12 +15,13 @@ module Happstack.Data.IxSet.Triplets
     -- , mkP3
     -- , gzip3F
     , mergeBy
-    , mergeByM
+    --, mergeByM
     , GB, GM, PB, PM
     ) where
 
 import Prelude hiding (GT)
 import Control.Applicative.Error
+import Control.Monad (MonadPlus(mzero, mplus))
 import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, gshow,
                       unGT, GenericT, GenericT'(GT), gmapAccumT,
                       unGM, GenericM, GenericM'(GM), gmapAccumM,
@@ -29,17 +30,16 @@ import Data.Maybe (fromMaybe)
 
 import Debug.Trace
 
-cast' :: (Typeable a, Typeable b) => a -> Failing b
-cast' = maybe (Failure ["cast"]) Success . cast
+instance MonadPlus Failing where
+    mzero = Failure []
+    mplus (Failure xs) (Failure ys) = Failure (xs ++ ys)
+    mplus success@(Success _) _ = success
+    mplus _ success@(Success _) = success
 
-orElse' :: Failing a -> Failing a -> Failing a
-orElse' a b =
-    case a of
-      Success x -> Success x
-      Failure ma ->
-          case b of
-            Success x -> Success x
-            Failure mb -> Failure (ma ++ mb)
+cast' :: (Monad m, Typeable a, Typeable b) => a -> m b
+cast' = maybe (fail "cast") return . cast
+
+--orElse' = mplus
 
 -- As originally defined: Twin map for transformation
 
@@ -123,10 +123,12 @@ gzipWithM3 f x y z =
 
 type GB = GenericQ (GenericQ (GenericQ Bool))                   -- Generic Bool Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Bool
-type GM = GenericQ (GenericQ (GenericM Failing))                -- Generic Maybe Query
+--type GM = GenericQ (GenericQ (GenericM Failing))                -- Generic Maybe Query
+type GM = MonadPlus m => GenericQ (GenericQ (GenericM m))           -- Generic Maybe Query
 --      = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
 type PB = forall x. Data x => x -> x -> x -> Bool
-type PM = forall x. Data x => x -> x -> x -> Failing x        -- Polymorphic Failing Query
+--type PM = forall x. Data x => x -> x -> x -> Failing x        -- Polymorphic Failing Query
+type PM = forall m x. (MonadPlus m, Data x) => x -> x -> x -> m x        -- Polymorphic Failing Query
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
 -- over the "elements" of three instances of a type.  The function
@@ -149,8 +151,8 @@ gzip3 f = gzipBut3 f gzipQ3
 gzipQ3 :: GM
 gzipQ3 x y z = 
     if and [toConstr x == toConstr y, toConstr y == toConstr z]
-    then Success undefined
-    else Failure ["Conflict: x=" ++ gshow x ++ " y=" ++ gshow y ++ " z=" ++ gshow z]
+    then return undefined
+    else fail ("Conflict: x=" ++ gshow x ++ " y=" ++ gshow y ++ " z=" ++ gshow z)
 
 -- |This function adds a test to limit the recursion of gzip3.  For
 -- example, with the merge function mentioned above you might want to
@@ -182,10 +184,13 @@ gzipBut3 merge continue x y z =
       gzip3' :: GM -> GM
       gzip3' merge x y z =
           merge x y z
-         `orElse'`
+         `mplus`
+          (continue x y z >> gzipWithM3 (gzip3' merge) x y z)
+{-
            case continue x y z of
              Success _ -> gzipWithM3 (gzip3' merge) x y z
              Failure msgs -> Failure msgs
+-}
 
 {-
 gzipBut3' :: (Int -> PM) -> (Int -> GM) -> PM
@@ -236,19 +241,21 @@ mkQ2 d q x y = fromMaybe (d x y) $ cast x >>= \x' -> cast y >>= \y' -> Just (q x
 -- (\ _ _ _ -> Nothing), while eq could be geq, but it could also
 -- just return false for more complex datatypes that we don't want
 -- to repeatedly traverse.
-mergeBy :: forall a. (a -> a -> a -> Failing a) -> (a -> a -> Bool) -> a -> a -> a -> Failing a
+mergeBy :: forall a m. MonadPlus m => (a -> a -> a -> m a) -> (a -> a -> Bool) -> a -> a -> a -> m a
 mergeBy conflict eq original left right =
-    if eq original left then Success right
-    else if eq original right then Success left
-         else if eq left right then Success left
+    if eq original left then return right
+    else if eq original right then return left
+         else if eq left right then return left
               else conflict original left right
 
+{-
 mergeByM :: forall a m. (Monad m) => (a -> a -> a -> m (Failing a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Failing a)
 mergeByM conflict eq original left right =
     if eq original left then return (Success right)
     else if eq original right then return (Success left)
          else if eq left right then return (Success left)
               else conflict original left right
+-}
 
 _traceThis :: (a -> String) -> a -> a
 _traceThis f x = trace (f x) x
