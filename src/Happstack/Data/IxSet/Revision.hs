@@ -18,7 +18,7 @@ module Happstack.Data.IxSet.Revision
     , Heads
     , heads
     -- , combine
-    , combineInfo
+    --, combineInfo
     , showRev
     , combine3
     -- , combine3M
@@ -26,7 +26,7 @@ module Happstack.Data.IxSet.Revision
     , eqEx
     ) where
 
-import Control.Applicative.Error
+--import Control.Applicative.Error
 import Control.Monad (MonadPlus(mplus))
 import qualified Data.ByteString.Char8 as B
 import Data.Generics
@@ -205,7 +205,7 @@ heads s =
 -- each other.  If not, the combined value is returned, otherwise
 -- Nothing.  Remember that the revision info will always differ, don't
 -- try to merge it!
-combine3 :: forall a. (Revisable a) => (a -> a -> a -> Failing a) -> (a -> a -> Bool) -> a -> a -> a -> Failing a
+combine3 :: forall m a. (MonadPlus m, Revisable a) => (a -> a -> a -> m a) -> (a -> a -> Bool) -> a -> a -> a -> m a
 combine3 conflict eq original left right =
     mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
@@ -292,6 +292,7 @@ combine eq set heads@(head : _) =
       i = ident . revision . getRevisionInfo $ head
 -}
 
+{-
 combineInfo :: (Revisable a, Data a, POSet (IxSet a) a, Indexable a b) =>
                (GenericQ (GenericQ Bool)) -> IxSet a -> IxSet a -> a -> a -> String
 combineInfo eq _all s x y =
@@ -300,8 +301,9 @@ combineInfo eq _all s x y =
      ++ ", Ancestor: " ++ show (getRevisionInfo a)
      ++ ", Combined: " ++ failing (intercalate ", ") (show . getRevisionInfo) x')
     where
-      x' = combine3 (\ _ _ _ -> Failure ["combineInfo"]) eq a x y
+      x' = combine3 (\ _ _ _ -> fail "combineInfo") eq a x y
       a = commonAncestor' s x y
+-}
 
 {-
 classes :: (Revisable a, Indexable a b, Data a, POSet (IxSet a) a) => (GenericQ (GenericQ Bool)) -> IxSet a -> [a] -> [[a]]

@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.80) unstable; urgency=low
+
+  * Convert the uses of Failing in the IxSet modules to work with
+    any MonadPlus instance.
+
+ -- David Fox <dsf@seereason.com>  Mon, 18 Jan 2010 12:07:19 -0800
+
 haskell-happstack-extra (0.79) unstable; urgency=low
 
   * Convert the three way merge code so it can be used with any

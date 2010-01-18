@@ -6,7 +6,7 @@ module Happstack.Data.IxSet.Merge
     , continue
     ) where
 
-import Control.Applicative.Error
+--import Control.Applicative.Error
 import Control.Monad (MonadPlus(..))
 import qualified Data.ByteString as B
 import Data.Data (Data, toConstr)

@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, TemplateHaskell #-}
 {-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
@@ -20,13 +20,15 @@ module Happstack.Data.IxSet.Triplets
     ) where
 
 import Prelude hiding (GT)
-import Control.Applicative.Error
+import Control.Applicative.Error (Failing(..))
 import Control.Monad (MonadPlus(mzero, mplus))
 import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, gshow,
                       unGT, GenericT, GenericT'(GT), gmapAccumT,
                       unGM, GenericM, GenericM'(GM), gmapAccumM,
                       unGQ, GenericQ, GenericQ'(GQ), gmapQ)
 import Data.Maybe (fromMaybe)
+import Happstack.Data (deriveSerialize)
+import Happstack.State (Version)
 
 import Debug.Trace
 
@@ -35,6 +37,10 @@ instance MonadPlus Failing where
     mplus (Failure xs) (Failure ys) = Failure (xs ++ ys)
     mplus success@(Success _) _ = success
     mplus _ success@(Success _) = success
+
+--- TODO: move somewhere
+instance Version (Failing a)
+$(deriveSerialize ''Failing)
 
 cast' :: (Monad m, Typeable a, Typeable b) => a -> m b
 cast' = maybe (fail "cast") return . cast
