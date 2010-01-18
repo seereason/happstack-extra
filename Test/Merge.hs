@@ -11,12 +11,6 @@ import Happstack.Data.IxSet.Triplets (GM, gzipQ3, extQ3)
 import Test.HUnit
 -- import Debug.Trace
 
-instance MonadPlus Failing where
-    mzero = Failure []
-    mplus (Failure xs) (Failure ys) = Failure (xs ++ ys)
-    mplus success@(Success _) _ = success
-    mplus _ success@(Success _) = success
-
 tests = [test1, test2, test3, test4, test5, test6, test7]
 
 continue1 :: GM
