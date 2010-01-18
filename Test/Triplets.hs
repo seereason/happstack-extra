@@ -11,12 +11,6 @@ import Data.Generics (Data, geq, gshow)
 import Data.List (intercalate)
 import Test.HUnit
 
-instance MonadPlus Failing where
-    mzero = Failure []
-    mplus (Failure xs) (Failure ys) = Failure (xs ++ ys)
-    mplus success@(Success _) _ = success
-    mplus _ success@(Success _) = success
-
 tests :: [Test]
 tests = [gzipTest1, gzipTest2, gzipTest3]
 
