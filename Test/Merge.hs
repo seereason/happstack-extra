@@ -1,17 +1,21 @@
+{-# LANGUAGE ScopedTypeVariables, RankNTypes #-}
 {-# OPTIONS -fno-warn-missing-signatures #-}
 module Test.Merge
     ( tests
     ) where
 
+import Control.Applicative (Applicative)
 import Control.Applicative.Error
 import Control.Monad (MonadPlus(..))
 import qualified Data.ByteString.UTF8 as B
+import Data.Generics (Data, gshow, GenericQ)
+import Data.List (intercalate)
 import Happstack.Data.IxSet.Merge
-import Happstack.Data.IxSet.Triplets (GM, gzipQ3, extQ3)
+import Happstack.Data.IxSet.Triplets (GM, GA, GB, gzipQ3, extQ3, mkQ3, GenericA)
 import Test.HUnit
--- import Debug.Trace
+--import Debug.Trace
 
-tests = [test1, test2, test3, test4, test5, test6, test7]
+tests = [test1, test1a, test1b, test1c, test2, test3, test4, test5, test6, test7]
 
 continue1 :: GM
 continue1 o l r = (gzipQ3 `extQ3` stringFail) o l r
@@ -28,6 +32,29 @@ stringFail o l r = fail ("String conflict: o=" ++ show o ++ ", l=" ++ show l ++ 
 test1 = TestCase $ assertEqual "string conflict" (Failure ["String conflict: o=\"pup\", l=\"cup\", r=\"pun\""]) $
         -- trace "\n\nStarting test1" (return ()) >>
         threeWayMerge continue1 "pup" "cup" "pun"
+
+continueA1 :: GB
+continueA1 o l r = continueA o l r
+continueA2 :: GB
+continueA2 o l r = False
+continueA3 :: GB
+continueA3 o l r = True
+
+--conflict :: GA
+conflict :: GenericQ (GenericQ (GenericA Failing))
+--conflict :: Applicative f => GenericQ (GenericQ (forall a. Data a => a -> f a))
+conflict o l r =
+    -- error ("conflict: o=" ++ gshow o ++ " l=" ++ gshow l ++ " r=" ++ gshow r)
+    Failure ["conflict: o=" ++ gshow o ++ " l=" ++ gshow l ++ " r=" ++ gshow r]
+
+test1a = TestCase $ assertEqual "string conflict" (Failure ["conflict: o=\"pup\" l=\"pop\" r=\"pun\""])
+         (threeWayMergeA continueA1 conflict "pup" "pop" "pun" :: Failing String)
+
+test1b = TestCase $ assertEqual "generic conflict" (Failure ["conflict: o=\"pup\" l=\"pop\" r=\"pun\""])
+         (threeWayMergeA continueA2 conflict "pup" "pop" "pun" :: Failing String)
+
+test1c = TestCase $ assertEqual "string conflict" (Success "pon")
+         (threeWayMergeA continueA3 conflict "pup" "pop" "pun" :: Failing String)
 
 -- Test the three types of merge - left edited
 test2 = TestCase $ assertEqual "left edited" (Success "cup") $

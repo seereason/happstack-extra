@@ -210,8 +210,10 @@ combine3 conflict eq original left right =
     mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
 
+-- | Unused?
 conflicts :: forall m a. (MonadPlus m, Revisable a, Data a) =>
-             GM -> (forall m x. (MonadPlus m, Data x) => [String] -> x -> x -> x -> m x) -> (forall m x. (MonadPlus m, Data x) => x -> x -> m x) -> a -> a -> a -> m a
+             GM -> (forall m x. (MonadPlus m, Data x) => [String] -> x -> x -> x -> m x) ->
+                   (forall m x. (MonadPlus m, Data x) => x -> x -> m x) -> a -> a -> a -> m a
 conflicts q conflict eq original left right =
     gzipBut3 merge q original left right
     where

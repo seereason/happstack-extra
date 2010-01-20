@@ -1,11 +1,13 @@
-{-# LANGUAGE RankNTypes, TemplateHaskell #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables, TemplateHaskell #-}
 {-# OPTIONS -Wwarn #-}
 module Happstack.Data.IxSet.Triplets
     ( gzipWithM3
     , gzipWithT3
+    , gzipWithA3
     , gzip3
     , gzipQ3
     , gzipBut3
+    , gzipButA3
     -- , gzipBut3'
     , extQ2
     , extQ3
@@ -16,21 +18,21 @@ module Happstack.Data.IxSet.Triplets
     -- , gzip3F
     , mergeBy
     --, mergeByM
-    , GB, GM, PB, PM
+    , GenericA
+    , GB, GM, GA, PB, PM, PA
     ) where
 
 import Prelude hiding (GT)
+import Control.Applicative (Applicative(..))
 import Control.Applicative.Error (Failing(..))
 import Control.Monad (MonadPlus(mzero, mplus))
-import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, gshow,
+import Data.Generics (Data, Typeable, toConstr, cast, gcast, gmapAccumQ, gshow, gfoldlAccum,
                       unGT, GenericT, GenericT'(GT), gmapAccumT,
                       unGM, GenericM, GenericM'(GM), gmapAccumM,
                       unGQ, GenericQ, GenericQ'(GQ), gmapQ)
 import Data.Maybe (fromMaybe)
 import Happstack.Data (deriveSerialize)
 import Happstack.State (Version)
-
-import Debug.Trace
 
 instance MonadPlus Failing where
     mzero = Failure []
@@ -95,6 +97,12 @@ gzip2 f = gzip2' f'
 
 -- For three args now
 
+--type GenericT = forall a. Data a => a -> a
+--type GenericQ r = forall a. Data a => a -> r
+--type GenericM m = forall a. Data a => a -> m a
+type GenericA f = forall a. Data a => a -> f a
+newtype GenericA' f = GA { unGA :: Data a => a -> f a }
+
 gzipWithT3 ::
    GenericQ (GenericQ (GenericT))
  -> GenericQ (GenericQ (GenericT))
@@ -127,14 +135,48 @@ gzipWithM3 f x y z =
             perkid' a d = (tail a, unGQ (head a) d)
             funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
-type GB = GenericQ (GenericQ (GenericQ Bool))                   -- Generic Bool Query
---      = (Data a, Data b, Data c) => a -> b -> c -> Bool
---type GM = GenericQ (GenericQ (GenericM Failing))                -- Generic Maybe Query
-type GM = MonadPlus m => GenericQ (GenericQ (GenericM m))           -- Generic Maybe Query
---      = (Data a, Data b, Data c) => a -> b -> c -> Maybe c
+gzipWithA3 :: Applicative f => GA f -> GA f
+gzipWithA3 f x y z =
+    case gmapAccumA perkid funs z of
+      ([], c) -> c
+      _       -> error "gzipWithA3"
+    where
+      perkid a d = (tail a, unGA (head a) d)
+      funs = case gmapAccumQ perkid' funs' y of
+               ([], q) -> q
+               _       -> error "gzipWithA3"
+          where
+            perkid' a d = (tail a, unGQ (head a) d)
+            funs' = gmapQ (\k -> (GQ (\k' -> GA (f k k')))) x
+
+type GB = GenericQ (GenericQ (GenericQ Bool))
+-- ^ Generic Bool Query, (Data a, Data b, Data c) => a -> b -> c -> Bool
+type GM = MonadPlus m => GenericQ (GenericQ (GenericM m))
+-- ^ Generic Maybe Query, (Data a, Data b, Data c) => a -> b -> c -> Maybe c
 type PB = forall x. Data x => x -> x -> x -> Bool
---type PM = forall x. Data x => x -> x -> x -> Failing x        -- Polymorphic Failing Query
-type PM = forall m x. (MonadPlus m, Data x) => x -> x -> x -> m x        -- Polymorphic Failing Query
+-- ^ Polymorphic Bool Query
+type PM = forall m x. (MonadPlus m, Data x) => x -> x -> x -> m x
+-- ^ Polymorphic Failing Query, forall x. Data x => x -> x -> x -> Failing x
+type GA f = GenericQ (GenericQ (GenericA f))
+-- ^ Generic Applicative Query
+type PA f = forall x. Data x => x -> x -> x -> f x
+-- ^ Polymorphic Applicative Query
+
+-- | gmapA with accumulation (untested)
+-- (Move to Data.Generics.Twins)
+gmapAccumA :: forall a d f. (Data d, Applicative f)
+           => (forall e. Data e => a -> e -> (a, f e))
+           -> a -> d -> (a, f d)
+gmapAccumA f a0 d0 = gfoldlAccum k z a0 d0
+    where
+      k :: forall d e. (Data d) =>
+           a -> f (d -> e) -> d -> (a, f e)
+      k a c d = let (a',d') = f a d
+                    c' = c <*> d'
+                in (a', c')
+      z :: forall t a f. (Applicative f) =>
+           t -> a -> (t, f a)
+      z a x = (a, pure x)
 
 -- |The purpose of gzip3 is to map a polymorphic (generic) function
 -- over the "elements" of three instances of a type.  The function
@@ -192,31 +234,26 @@ gzipBut3 merge continue x y z =
           merge x y z
          `mplus`
           (continue x y z >> gzipWithM3 (gzip3' merge) x y z)
-{-
-           case continue x y z of
-             Success _ -> gzipWithM3 (gzip3' merge) x y z
-             Failure msgs -> Failure msgs
--}
 
-{-
-gzipBut3' :: (Int -> PM) -> (Int -> GM) -> PM
-gzipBut3' merge continue x y z =
-    gzip3' 0 merge' x y z
+-- | gzipWithA3 plus a continue function to prevent recursion into
+-- particular types.  (UNTESTED)
+gzipButA3 :: forall f. Applicative f => PM -> GB -> GA f -> PA f
+gzipButA3  merge continue conflict x y z =
+    gzip3' merge' x y z
     where
-      -- If the three elements aren't all the type of f's arguments,
-      -- this expression will return Nothing.  Also, the f function
-      -- might return Nothing.  In those cases we call gzipWithM3 to
-      -- traverse the sub-elements.
-      merge' :: Int -> GM
-      merge' n x y z = cast' x >>= \x' -> cast' y >>= \y' -> merge n x' y' z
-      gzip3' :: Int -> (Int -> GM) -> GM
-      gzip3' n merge x y z =
-          merge n x y z
-         `orElse'`
-           case continue n x y z of
-             Success _ -> gzipWithM3 (gzip3' (n+1) merge) x y z
-             Failure msgs -> Failure msgs
--}
+      gzip3' :: GM -> GA f
+      gzip3' merge x y z =
+          case merge x y z of
+            Just x' -> pure x'
+            Nothing ->
+                if continue x y z
+                then gzipWithA3 (gzip3' merge) x y z
+                else conflict x y z
+      merge' :: GM
+      merge' x y z =
+          case (cast x, cast y) of
+            (Just x', Just y') -> merge x' y' z
+            _ -> fail "type conflict"
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r
@@ -253,24 +290,3 @@ mergeBy conflict eq original left right =
     else if eq original right then return left
          else if eq left right then return left
               else conflict original left right
-
-{-
-mergeByM :: forall a m. (Monad m) => (a -> a -> a -> m (Failing a)) -> (a -> a -> Bool) -> a -> a -> a -> m (Failing a)
-mergeByM conflict eq original left right =
-    if eq original left then return (Success right)
-    else if eq original right then return (Success left)
-         else if eq left right then return (Success left)
-              else conflict original left right
--}
-
-_traceThis :: (a -> String) -> a -> a
-_traceThis f x = trace (f x) x
-
-{-
-mkP3 :: forall a b c r. (Data a, Data b, Data c) => r -> (a -> a -> a -> r) -> b -> c -> a -> r
-mkP3 d f x y z = fromMaybe d $ cast x >>= \x' -> cast y >>= \y' -> Just (f x' y' z)
--}
-
--- traceF x = trace ("f -> " ++ if isJust x then "Just ..." else "Nothing") x
--- traceQ x = trace ("q -> " ++ show x) x
--- traceZip x = trace ("gzipWithM3 -> " ++ if isJust x then "Just ..." else "Nothing") x

@@ -25,27 +25,30 @@ module Happstack.Data.IxSet.Store
     , reviseAndMerge
     --, replaceElts
     , combineHeads
+    , combineHeadsA
     , deleteRev
     , prune
     , setStatus
     , replace
     , replace1
+    , replaceA
+    , replace1A
     , close
     ) where
 
+import Control.Applicative (Applicative(..))
 --import Control.Applicative.Error (Failing(Success, Failure))
-import Control.Monad (MonadPlus(..), msum)
+import Control.Monad (MonadPlus(..))
 import Data.Data (Data)
 import Data.Function (on)
 import Data.Generics (gshow)
 import Data.List (tails, groupBy, sortBy, intercalate)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, isNothing)
-import Data.Typeable (Typeable1)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null, size)
 import Happstack.Data.IxSet.Extra (difference)
-import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge, continue)
+import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge, continue, twoOrThreeWayMergeA, continueA)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo), initialRevision,
                                       RevisionInfo(RevisionInfo, created, revision, parentRevisions),
@@ -196,16 +199,6 @@ reviseAndMerge scrub prep creationTime revs x store =
                combineHeads scrub prep i creationTime store' >>= 
                             \ (store'', heads) ->
                                 return (maybe (Just store') Just store'', x', heads)
-{-        
-    then case replace1 scrub creationTime revs x store of
-           Failure ss -> msum (map fail ss)
-           Success (store', x') ->
-               let i = trace ("  reviseAndMerge " ++ show revs) (ident (revision (getRevisionInfo x'))) in
-               case combineHeads scrub prep i creationTime store' of
-                 Failure ss -> msum (map fail ss)
-                 Success (Nothing, heads) -> return (Just store', x', heads)
-                 Success (Just store'', heads) -> return (Just store'', x', heads)
--}
     else fail "reviseAndMerge: permission denied"
     where
       xs = map scrub (toList (set @+ revs))
@@ -219,12 +212,6 @@ create scrub creationTime x store =
             \ (store'', xs) -> case xs of
                                  [x''] -> return (store'', x'')
                                  _ -> fail "replace failed"
-{-
-    case replace scrub creationTime [] [x'] store' of
-      Success (store'', [x'']) -> return (store'', x'')
-      Success (_, _) -> fail "replace failed"
-      Failure msgs -> msum (map fail msgs)
--}
 
 -- |Examine the set of head revisions and attempt to merge as many as
 -- possible using the automatic threeWayMerge function.  Returns the
@@ -245,32 +232,45 @@ combineHeads scrub prep i creationTime set =
           twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r) >>=
             \ m -> replace1 scrub creationTime [lrev, rrev] m set >>=
             \ (set', _) -> merge True set' (askTriplets scrub i set')
-{-
-          case t (twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r)) of
-            -- We merged a triplet, set the merged flag and re-start the combine process
-            Success m ->
-                case replace1 scrub creationTime [lrev, rrev] m set of
-                  Failure ss -> msum (map fail ss)
-                  Success (set', _) -> merge True set' (askTriplets scrub i set')
-            -- We couldn't merge a triplet, try the next
-            Failure msgs -> merge merged set more
--}
           where
             orev = fmap (revision . getRevisionInfo) o
             lrev = revision (getRevisionInfo l)
             rrev = revision (getRevisionInfo r)
-{-
-            t = traceThis (\ m -> "  combineHeads threeWayMerge " ++
-                                  "o=" ++ show orev ++
-                                  ", l=" ++ show lrev ++
-                                  ", r=" ++ show rrev ++
-                                  " -> " ++ show (fmap (revision . getRevisionInfo) m))
--}
       -- Permission failure
       merge _ _ (Just (Triplet _ l r) : _) =
           fail ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r])
       merge merged set (Nothing : more) = merge merged set more
       prep' = clearRev . prep
+
+combineHeadsA :: forall f set elt s. (Applicative f, Store set elt s) =>
+                (elt -> Maybe elt) -> (elt -> elt) -> Ident -> EpochMilli -> set -> f (Maybe set, [elt])
+combineHeadsA scrub prep i creationTime set =
+    merge False set (askTriplets scrub i set)
+    where
+      -- No triplets left to merge, return the finalized list of heads
+      merge :: Bool -> set -> [Maybe (Triplet elt)] -> f (Maybe set, [elt])
+      merge merged set [] =
+          pure (if merged then Just set else Nothing, heads)
+          where heads = toList ((getIxSet set @= i) @= Head)
+      -- Try to merge each of the triplets in turn
+      merge merged set (Just (Triplet o@(Just _) l r) : more) =
+          undefined
+{-
+          twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r) >>=
+            \ m -> replace1 scrub creationTime [lrev, rrev] m set >>=
+            \ (set', _) -> merge True set' (askTriplets scrub i set')
+-}
+          where
+            orev = fmap (revision . getRevisionInfo) o
+            lrev = revision (getRevisionInfo l)
+            rrev = revision (getRevisionInfo r)
+      -- Permission failure
+      merge _ _ (Just (Triplet _ l r) : _) =
+          error ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r])
+      merge merged set (Nothing : more) = merge merged set more
+      prep' = clearRev . prep
+
+conflict = undefined
 
 clearRev :: Revisable a => a -> a
 clearRev x = putRevisionInfo (defaultValue {revision = defaultValue {ident = ident (revision (getRevisionInfo x))}}) x
@@ -377,12 +377,14 @@ replace1 scrub creationTime parentRevs merged store =
                 case merged' of
                   [merged''] -> return (store', merged'')
                   _ -> fail "Unexpected result from replace"
-{-
-    case replace scrub creationTime parentRevs [merged] store of
-      Success (store', [merged']) -> return (store', merged')
-      Success _ -> fail "Unexpected result from replace"
-      Failure msgs -> msum (map fail msgs)
--}
+
+replace1A :: forall f set elt s. (Applicative f, Store set elt s, Indexable elt s) =>
+            (elt -> Maybe elt) -> EpochMilli -> [Revision] -> set -> elt -> f (set, elt)
+replace1A scrub creationTime parentRevs store merged =
+    fmap finish (replaceA scrub creationTime parentRevs [merged] store)
+    where
+      finish (store', [merged']) = (store', merged')
+      finish _ = error "Unexpected result from replaceA"
 
 -- |Replace zero or more parents with zero or more children.
 replace :: forall m set elt s. (MonadPlus m, Store set elt s, Indexable elt s) =>
@@ -392,6 +394,18 @@ replace scrub creationTime parentRevs children store =
       [] -> fail "replace: No parents and no children"
       ids@(i : _) | allEqual ids -> replace' scrub i creationTime parentRevs children store
       _ids -> fail ("replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds)
+    where
+      childIds = map (ident . revision . getRevisionInfo) children
+      parentIds = map ident parentRevs
+
+-- |Replace zero or more parents with zero or more children.  Should be pure.
+replaceA :: forall f set elt s. (Applicative f, Store set elt s, Indexable elt s) =>
+           (elt -> Maybe elt) -> EpochMilli -> [Revision] -> [elt] -> set -> f (set, [elt])
+replaceA scrub creationTime parentRevs children store =
+    case parentIds ++ childIds of
+      [] -> error "replace: No parents and no children"
+      ids@(i : _) | allEqual ids -> replaceA' scrub i creationTime parentRevs children store
+      _ids -> error ("replace: id mismatch: parentIds=" ++ show parentIds ++ ", childIds=" ++ show childIds)
     where
       childIds = map (ident . revision . getRevisionInfo) children
       parentIds = map ident parentRevs
@@ -407,6 +421,48 @@ replace' scrub i creationTime parentRevs children store =
       False -> if size set'' == size set' + length children'
                then return (store'', children')
                else fail ("Failed to insert " ++ show childRevs' ++ " into " ++ gshowSet set' ++ ": result was " ++ gshowSet set'')
+    where
+      store'' :: set
+      store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'
+      store' :: set
+      store' = putIxSet set'' store
+      -- Insert the new children
+      set'' :: IxSet elt
+      set'' = foldr insert set' children'
+      -- Change the status of all the parents to NonHead
+      set' :: IxSet elt
+      set' = foldr unHead set (catMaybes parents)
+      parents :: [Maybe elt]
+      parents = map scrub (toList (set @+ parentRevs))
+      children' :: [elt]
+      children' = map (uncurry putRevisionInfo) (zip childInfo children)
+      childInfo :: [RevisionInfo]
+      childInfo = map (\ rev -> RevisionInfo {revision = rev,
+                                              created = creationTime,
+                                              parentRevisions = map number parentRevs,
+                                              nodeStatus = Head}) childRevs'
+      childRevs' :: [Revision]
+      childRevs' = map (\ (rev, n) -> rev {number = n + getMaxRev i store}) (zip childRevs [1..])
+      childRevs :: [Revision]
+      childRevs = map (revision . getRevisionInfo) children
+      set :: IxSet elt
+      set = getIxSet store
+      unHead x xs = insert x' (delete x xs)
+          where x' = putRevisionInfo (f (getRevisionInfo x)) x
+                f :: RevisionInfo -> RevisionInfo
+                f x = x {nodeStatus = NonHead}
+
+-- |This is the internal function that does the work for replace,
+-- replace1, and close.  This fails if we can't access any of the
+-- parents.  (This should be pure.)
+replaceA' :: forall f set elt s. (Applicative f, Store set elt s, Indexable elt s) =>
+            (elt -> Maybe elt) -> Ident -> EpochMilli -> [Revision] -> [elt] -> set -> f (set, [elt])
+replaceA' scrub i creationTime parentRevs children store =
+    case any isNothing parents of
+      True -> error "replace: Permission denied"
+      False -> if size set'' == size set' + length children'
+               then pure (store'', children')
+               else error ("Failed to insert " ++ show childRevs' ++ " into " ++ gshowSet set' ++ ": result was " ++ gshowSet set'')
     where
       store'' :: set
       store'' = putMaxRev i (getMaxRev i store' + toInteger (length children)) store'
@@ -483,23 +539,9 @@ gshowList l = "[" ++ intercalate ", " (map gshow l) ++ "]"
 traceThis :: (a -> String) -> a -> a
 traceThis f x = trace (f x) x
 
-{-
-showRevs :: Revisable a => [a] -> String
-showRevs xs = show (map (revision . getRevisionInfo) xs)
-
-rr :: Revisable a => a -> Revision
-rr = revision . getRevisionInfo
--}
-
 allEqual :: Eq a => [a] -> Bool
 allEqual (x : more) = all (\ y -> x == y) more
 allEqual [] = True
-
-{-
-allEqualBy :: Eq b => (a -> b) -> [a] -> Bool
-allEqualBy f (x : more) = all (\ y -> f x == f y) more
-allEqualBy _ [] = True
--}
 
 _traceRev :: Revisable a => String -> a -> a
 _traceRev prefix x = trace (prefix ++ show (getRevisionInfo x)) x

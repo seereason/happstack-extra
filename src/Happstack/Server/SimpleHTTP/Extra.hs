@@ -9,7 +9,7 @@ import Happstack.Server.HSP.HTML ()
 import HSP (XMLGenT, XML)
 import HSP.HTML
 import HSP.Identity
-import qualified HSX.XMLGenerator as HSX
+--import qualified HSX.XMLGenerator as HSX
 
 instance ToMessage (XMLGenT Identity XML) where
     toContentType _ = P.pack "text/html"
