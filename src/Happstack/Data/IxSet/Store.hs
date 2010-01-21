@@ -48,7 +48,7 @@ import Data.Maybe (catMaybes, isJust, isNothing)
 import Happstack.Data (deriveSerialize, Default(..), deriveAll)
 import Happstack.Data.IxSet (Indexable(..), IxSet(..), (@=), (@+), toList, fromList, delete, insert, null, size)
 import Happstack.Data.IxSet.Extra (difference)
-import Happstack.Data.IxSet.Merge (twoOrThreeWayMerge, continue, twoOrThreeWayMergeA, continueA)
+import Happstack.Data.IxSet.Merge (threeWayMerge, continue, threeWayMergeA, continueA)
 import Happstack.Data.IxSet.POSet (commonAncestor)
 import Happstack.Data.IxSet.Revision (Revisable(getRevisionInfo, putRevisionInfo), initialRevision,
                                       RevisionInfo(RevisionInfo, created, revision, parentRevisions),
@@ -113,7 +113,7 @@ $(deriveAll [''Eq, ''Ord, ''Read, ''Show]
   [d|
       data Triplet a
           = Triplet
-            { original :: Maybe a
+            { original :: a
             , left :: a
             , right :: a }
    |])
@@ -181,12 +181,16 @@ askTriplets scrub i store =
                          case g x y of
                            Just z ->
                                case (scrub x, scrub y, scrub z) of
-                                 (Just x', Just y', Just z') -> Just (Triplet {original=Just z', left=x', right=y'})
+                                 (Just x', Just y', Just z') -> Just (Triplet {original=z', left=x', right=y'})
                                  _ -> Nothing
                            Nothing ->
+                               error "Missing common ancestor"
+{-
                                case (scrub x, scrub y) of
                                  (Just x', Just y') -> Just (Triplet {original=Nothing, left=x', right=y'})
-                                 _ -> Nothing) xs
+                                 _ -> Nothing
+-}
+                    ) xs
 
 -- |Create a new revision of an existing element, and then try to
 -- merge all the heads.
@@ -228,17 +232,17 @@ combineHeads scrub prep i creationTime set =
           return (if merged then Just set else Nothing, heads)
           where heads = toList ((getIxSet set @= i) @= Head)
       -- Try to merge each of the triplets in turn
-      merge merged set (Just (Triplet o@(Just _) l r) : more) =
-          twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r) >>=
+      merge merged set (Just (Triplet o l r) : more) =
+          threeWayMerge continue (prep' o) (prep' l) (prep' r) >>=
             \ m -> replace1 scrub creationTime [lrev, rrev] m set >>=
             \ (set', _) -> merge True set' (askTriplets scrub i set')
           where
-            orev = fmap (revision . getRevisionInfo) o
+            orev = revision (getRevisionInfo o)
             lrev = revision (getRevisionInfo l)
             rrev = revision (getRevisionInfo r)
       -- Permission failure
-      merge _ _ (Just (Triplet _ l r) : _) =
-          fail ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r])
+{-    merge _ _ (Just (Triplet _ l r) : _) =
+          fail ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r]) -}
       merge merged set (Nothing : more) = merge merged set more
       prep' = clearRev . prep
 
@@ -253,7 +257,7 @@ combineHeadsA scrub prep i creationTime set =
           pure (if merged then Just set else Nothing, heads)
           where heads = toList ((getIxSet set @= i) @= Head)
       -- Try to merge each of the triplets in turn
-      merge merged set (Just (Triplet o@(Just _) l r) : more) =
+      merge merged set (Just (Triplet o l r) : more) =
           undefined
 {-
           twoOrThreeWayMerge continue (fmap prep' o) (prep' l) (prep' r) >>=
@@ -261,12 +265,12 @@ combineHeadsA scrub prep i creationTime set =
             \ (set', _) -> merge True set' (askTriplets scrub i set')
 -}
           where
-            orev = fmap (revision . getRevisionInfo) o
+            orev = revision (getRevisionInfo o)
             lrev = revision (getRevisionInfo l)
             rrev = revision (getRevisionInfo r)
       -- Permission failure
-      merge _ _ (Just (Triplet _ l r) : _) =
-          error ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r])
+{-    merge _ _ (Just (Triplet _ l r) : _) =
+          error ("combineHeads: missing ancestor of " ++ show [getRevisionInfo l, getRevisionInfo r]) -}
       merge merged set (Nothing : more) = merge merged set more
       prep' = clearRev . prep
 
@@ -354,7 +358,7 @@ prune scrub i store =
       discard :: IxSet elt
       discard = difference all (fromList (catMaybes keep))
       keep :: [Maybe elt]
-      keep = askHeads Just i store ++ fmap scrub (catMaybes ancestors)
+      keep = askHeads Just i store ++ fmap scrub ancestors
       ancestors = map original (catMaybes triplets)
       all :: IxSet elt
       all = set @= i
@@ -527,7 +531,7 @@ _fixBadRevs i store =
       set = getIxSet store
 
 _showTriplet :: Revisable a => Triplet a -> String
-_showTriplet (Triplet o l r) = "Triplet {o=" ++ maybe "Nothing" (show . revision . getRevisionInfo) o ++
+_showTriplet (Triplet o l r) = "Triplet {o=" ++ (show . revision . getRevisionInfo $ o) ++
                                ", l=" ++ (show . revision . getRevisionInfo $ l) ++
                                ", r=" ++ (show . revision . getRevisionInfo $ r) ++ "}"
 
