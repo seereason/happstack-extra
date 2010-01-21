@@ -8,10 +8,10 @@ import Control.Applicative (Applicative)
 import Control.Applicative.Error
 import Control.Monad (MonadPlus(..))
 import qualified Data.ByteString.UTF8 as B
-import Data.Generics (Data, gshow, GenericQ)
+import Data.Generics (Data, gshow, GenericQ, GenericM)
 import Data.List (intercalate)
 import Happstack.Data.IxSet.Merge
-import Happstack.Data.IxSet.Triplets (GM, GA, GB, gzipQ3, extQ3, mkQ3, GenericA)
+import Happstack.Data.IxSet.Triplets (GM, GA, GB, gzipQ3, extQ3, mkQ3)
 import Test.HUnit
 --import Debug.Trace
 
@@ -41,7 +41,7 @@ continueA3 :: GB
 continueA3 o l r = True
 
 --conflict :: GA
-conflict :: GenericQ (GenericQ (GenericA Failing))
+conflict :: GenericQ (GenericQ (GenericM Failing))
 --conflict :: Applicative f => GenericQ (GenericQ (forall a. Data a => a -> f a))
 conflict o l r =
     -- error ("conflict: o=" ++ gshow o ++ " l=" ++ gshow l ++ " r=" ++ gshow r)

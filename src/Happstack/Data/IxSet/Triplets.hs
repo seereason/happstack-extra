@@ -18,7 +18,7 @@ module Happstack.Data.IxSet.Triplets
     -- , gzip3F
     , mergeBy
     --, mergeByM
-    , GenericA
+    --, GenericA
     , GB, GM, GA, PB, PM, PA
     ) where
 
@@ -100,8 +100,6 @@ gzip2 f = gzip2' f'
 --type GenericT = forall a. Data a => a -> a
 --type GenericQ r = forall a. Data a => a -> r
 --type GenericM m = forall a. Data a => a -> m a
-type GenericA f = forall a. Data a => a -> f a
-newtype GenericA' f = GA { unGA :: Data a => a -> f a }
 
 gzipWithT3 ::
    GenericQ (GenericQ (GenericT))
@@ -135,19 +133,19 @@ gzipWithM3 f x y z =
             perkid' a d = (tail a, unGQ (head a) d)
             funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
-gzipWithA3 :: Applicative f => GA f -> GA f
+gzipWithA3 :: forall f. Applicative f => GA f -> GA f
 gzipWithA3 f x y z =
     case gmapAccumA perkid funs z of
       ([], c) -> c
       _       -> error "gzipWithA3"
     where
-      perkid a d = (tail a, unGA (head a) d)
+      perkid a d = (tail a, unGM (head a) d)
       funs = case gmapAccumQ perkid' funs' y of
                ([], q) -> q
                _       -> error "gzipWithA3"
           where
             perkid' a d = (tail a, unGQ (head a) d)
-            funs' = gmapQ (\k -> (GQ (\k' -> GA (f k k')))) x
+            funs' = gmapQ (\k -> (GQ (\k' -> GM (f k k')))) x
 
 type GB = GenericQ (GenericQ (GenericQ Bool))
 -- ^ Generic Bool Query, (Data a, Data b, Data c) => a -> b -> c -> Bool
@@ -157,8 +155,8 @@ type PB = forall x. Data x => x -> x -> x -> Bool
 -- ^ Polymorphic Bool Query
 type PM = forall m x. (MonadPlus m, Data x) => x -> x -> x -> m x
 -- ^ Polymorphic Failing Query, forall x. Data x => x -> x -> x -> Failing x
-type GA f = GenericQ (GenericQ (GenericA f))
--- ^ Generic Applicative Query
+type GA f = GenericQ (GenericQ (GenericM f))
+-- ^ Generic Applicative Query, forall a. Data a => a -> (forall b. Data b => b -> (forall c. Data c => c -> f c))
 type PA f = forall x. Data x => x -> x -> x -> f x
 -- ^ Polymorphic Applicative Query
 
@@ -237,23 +235,28 @@ gzipBut3 merge continue x y z =
 
 -- | gzipWithA3 plus a continue function to prevent recursion into
 -- particular types.  (UNTESTED)
-gzipButA3 :: forall f. Applicative f => PM -> GB -> GA f -> PA f
+gzipButA3 :: forall f. (Applicative f) => PM -> GB -> PA f -> GA f
 gzipButA3  merge continue conflict x y z =
     gzip3' merge' x y z
     where
       gzip3' :: GM -> GA f
-      gzip3' merge x y z =
-          case merge x y z of
+      gzip3' merge'' x y z =
+          case merge'' x y z of
             Just x' -> pure x'
             Nothing ->
                 if continue x y z
-                then gzipWithA3 (gzip3' merge) x y z
-                else conflict x y z
+                then gzipWithA3 (gzip3' merge'') x y z
+                else conflict' x y z
       merge' :: GM
       merge' x y z =
           case (cast x, cast y) of
             (Just x', Just y') -> merge x' y' z
             _ -> fail "type conflict"
+      conflict' :: GA f
+      conflict' x y z =
+          case (cast x, cast y) of
+            (Just x', Just y') -> conflict x' y' z
+            _ -> error "type conflict"
 
 extQ2 :: (Typeable a, Typeable b, Typeable d, Typeable e)
       => (a -> b -> r) -> (d -> e -> r) -> a -> b -> r

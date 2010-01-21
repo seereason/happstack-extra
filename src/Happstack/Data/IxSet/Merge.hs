@@ -23,7 +23,7 @@ twoOrThreeWayMerge _ Nothing _ _ = fail "Unimplemented: two way merge"
 twoOrThreeWayMerge continue (Just o) l r = threeWayMerge continue o l r
 
 -- |Untraced version, but we still trace failures via continue'.
-threeWayMerge :: forall m x. (MonadPlus m, Data x) => GM -> x -> x -> x -> m x
+threeWayMerge :: GM -> PM
 threeWayMerge continue o l r = gzipBut3 merge continue o l r
 
 twoOrThreeWayMergeA :: forall f x. (Applicative f, Data x) => GB -> GA f -> (Maybe x) -> x -> x -> f x
@@ -31,7 +31,7 @@ twoOrThreeWayMergeA _ _ Nothing _ _ = error "Unimplemented: two way merge"
 twoOrThreeWayMergeA continue conflict (Just o) l r = threeWayMergeA continue conflict o l r
 
 -- |Untraced version, but we still trace failures via continue'.
-threeWayMergeA :: forall f x. (Applicative f, Data x) => GB -> GA f -> x -> x -> x -> f x
+threeWayMergeA :: forall f. (Applicative f) => GB -> PA f -> PA f
 threeWayMergeA continue conflict o l r = gzipButA3 merge continue conflict o l r
 
 -- |If this function returns Nothing the zip will continue by trying
