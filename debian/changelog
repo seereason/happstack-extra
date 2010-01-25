@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.81) unstable; urgency=low
+
+  * Add applicative functor versions of the merging functions.
+
+ -- David Fox <dsf@seereason.com>  Sun, 24 Jan 2010 21:13:54 -0800
+
 haskell-happstack-extra (0.80) unstable; urgency=low
 
   * Convert the uses of Failing in the IxSet modules to work with
