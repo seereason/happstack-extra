@@ -235,17 +235,17 @@ gzipBut3 merge continue x y z =
 
 -- | gzipWithA3 plus a continue function to prevent recursion into
 -- particular types.  (UNTESTED)
-gzipButA3 :: forall f. (Applicative f) => PM -> GB -> PA f -> GA f
+gzipButA3 :: forall f. (Applicative f) => PM -> GB -> PA f -> PA f
 gzipButA3  merge continue conflict x y z =
-    gzip3' merge' x y z
+    gzip3' x y z
     where
-      gzip3' :: GM -> GA f
-      gzip3' merge'' x y z =
-          case merge'' x y z of
+      gzip3' :: GA f
+      gzip3' x y z =
+          case merge' x y z of
             Just x' -> pure x'
             Nothing ->
                 if continue x y z
-                then gzipWithA3 (gzip3' merge'') x y z
+                then gzipWithA3 gzip3' x y z
                 else conflict' x y z
       merge' :: GM
       merge' x y z =
