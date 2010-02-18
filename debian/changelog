@@ -1,8 +1,10 @@
 haskell-happstack-extra (0.83) unstable; urgency=low
 
   * Remove modules that moved to happstack.
+  * Add HSP.Applicative to (temporarily?) hold the Applicative instance of
+    Identity.
 
- -- David Fox <dsf@seereason.com>  Wed, 17 Feb 2010 21:52:37 -0800
+ -- David Fox <dsf@seereason.com>  Thu, 18 Feb 2010 05:20:12 -0800
 
 haskell-happstack-extra (0.82) unstable; urgency=low
 
