@@ -14,7 +14,7 @@ Exposed-Modules:  HSP.HTML.Extra, Happstack.Extra, Happstack.Data.IxSet.Extra,
                   Happstack.Server.Session, Happstack.Data.Serialize.Extra, 
                   Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
-                  Happstack.Server.Formlets, Happstack.Server.RqData, Happstack.Server.Feed, HSP.Pandoc,
+                  Happstack.Server.Formlets, Happstack.Server.RqData, Happstack.Server.Feed, HSP.Applicative, HSP.Pandoc,
                   Happstack.Data.IxSet.POSet, Happstack.Data.IxSet.Revision, Happstack.Data.IxSet.Revision.Old1,
                   Happstack.Data.IxSet.Revision.Current, Happstack.Data.IxSet.Revision.Instances, Happstack.Data.IxSet.Merge,
 		  Happstack.Data.IxSet.Store, Happstack.Data.IxSet.Triplets, Happstack.Data.Logger
