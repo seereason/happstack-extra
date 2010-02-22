@@ -32,6 +32,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Generics
 import Data.List (tails, intercalate)
 import qualified Data.Set as S
+import qualified Data.Text as T
 --import Happstack.Data (Default(..), deriveNewData, deriveNewDataNoDefault, deriveSerialize, Migrate(..))
 import Happstack.Data.IxSet
 import Happstack.Data.IxSet.POSet
@@ -243,7 +244,7 @@ eqEx x y =
       geq x y = (toConstr x == toConstr y) && and (gzipWithQ eqEx x y)
       stringEq :: String -> String -> Bool
       stringEq a b = (a == b)
-      textEq :: Text -> Text -> Bool
+      textEq :: T.Text -> T.Text -> Bool
       textEq a b = (a == b)
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
