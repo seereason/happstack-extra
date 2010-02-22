@@ -234,7 +234,7 @@ conflicts q conflict eq original left right =
 -- Example implementation of the eq argument to combine3.
 eqEx :: GenericQ (GenericQ Bool)
 eqEx x y =
-    (geq `mkQ2` bsEq `extQ2` stringEq) x y
+    (geq `mkQ2` bsEq `extQ2` stringEq `extQ2` textEq) x y
     where
       -- If the specialized eqs don't work, use the generic.  This
       -- will throw an exception if it encounters something with a
@@ -243,6 +243,8 @@ eqEx x y =
       geq x y = (toConstr x == toConstr y) && and (gzipWithQ eqEx x y)
       stringEq :: String -> String -> Bool
       stringEq a b = (a == b)
+      textEq :: Text -> Text -> Bool
+      textEq a b = (a == b)
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
 

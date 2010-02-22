@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.84) unstable; urgency=low
+
+  * Improve the Data.Text support to the three way merging code.  There
+    were a couple of cases it wasn't handling, possibly leading to
+    toConstr exceptions.
+
+ -- David Fox <dsf@seereason.com>  Mon, 22 Feb 2010 14:19:17 -0800
+
 haskell-happstack-extra (0.83) unstable; urgency=low
 
   * Remove modules that moved to happstack.

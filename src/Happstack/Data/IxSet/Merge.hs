@@ -72,7 +72,7 @@ continue :: GM
 continue o l r =
     -- We need to actually pass the three arguments here, if
     -- we try to curry it we get a "less polymorphic" error.
-    (gzipQ3 `extQ3` stringFail `extQ3` bsFail) o l r
+    (gzipQ3 `extQ3` stringFail `extQ3` bsFail `extQ3` textFail) o l r
 
 continueA :: GB
 continueA o l r =
@@ -106,7 +106,7 @@ eqDeep a b = (G.geq `mkQ2` stringEq `extQ2` bsEq) a b
 
 eqShallow :: forall a. (Data a) => a -> a -> Bool
 eqShallow a b =
-    (eq `mkQ2` stringEq `extQ2` bsEq) a b
+    (eq `mkQ2` textEq `extQ2` stringEq `extQ2` bsEq) a b
     where
       eq :: forall a. (Data a) => a -> a -> Bool
       eq a b = case dataTypeRep (dataTypeOf a) of
@@ -115,6 +115,9 @@ eqShallow a b =
 
 stringEq :: String -> String -> Bool
 stringEq = (==)
+
+textEq :: Text -> Text -> Bool
+textEq = (==)
 
 bsEq :: B.ByteString -> B.ByteString -> Bool
 bsEq = (==)
