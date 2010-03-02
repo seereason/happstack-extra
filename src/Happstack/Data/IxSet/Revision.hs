@@ -42,7 +42,7 @@ import Happstack.Data.IxSet.Revision.Current
 import Happstack.Data.IxSet.Revision.Instances()
 
 -- |Class of values that have a revision info.
-class Revisable k a | a -> k where
+class (Typeable k, Enum k) => Revisable k a | a -> k where
     getRevisionInfo :: a -> RevisionInfo k
     putRevisionInfo :: RevisionInfo k -> a -> a
 
@@ -52,7 +52,7 @@ copyRev s d = putRevisionInfo (getRevisionInfo s) d
 changeRevisionInfo :: Revisable k a => (RevisionInfo k -> RevisionInfo k) -> a -> a
 changeRevisionInfo f x = putRevisionInfo (f (getRevisionInfo x)) x
 
-instance (Typeable k, Ord a, Data a, Revisable k a, Indexable a b) => POSet (IxSet a) a where
+instance (Ord a, Data a, Revisable k a, Indexable a b) => POSet (IxSet a) a where
     parents s a =
         concatMap get (parentRevisions (getRevisionInfo a))
         where get n = toList (s @+ [(revision (getRevisionInfo a)) {number = n}])
@@ -138,7 +138,7 @@ eqEx x y =
       bsEq :: B.ByteString -> B.ByteString -> Bool
       bsEq a b = (a == b)
 
-showRev :: Show k => RevisionInfo k -> String
+showRev :: (Enum k, Show k) => RevisionInfo k -> String
 showRev r = (show . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)
 
 -- |A version of common ancestor that assumes there is one.

@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.86) unstable; urgency=low
+
+  * Additional changes to get migration to work.
+
+ -- David Fox <dsf@seereason.com>  Tue, 02 Mar 2010 13:14:36 -0800
+
 haskell-happstack-extra (0.85) unstable; urgency=low
 
   * Parameterize the Revision type so the ident field doesn't have to

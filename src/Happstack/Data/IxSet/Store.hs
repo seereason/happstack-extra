@@ -286,6 +286,9 @@ clearRev :: forall k a. (Revisable k a, Default k) => a -> a
 clearRev x =
     putRevisionInfo ((defaultValue :: RevisionInfo k) {revision = (defaultValue :: Revision k) {ident = ident (revision (getRevisionInfo x))}}) x
 
+_copyRev :: forall k a. (Revisable k a, Default k) => a -> a -> a
+_copyRev src dst = putRevisionInfo (getRevisionInfo src) dst
+
 -- |Change the node status of a revision to Head or NonHead.
 setStatus :: forall m set k elt s. (MonadPlus m, Store set k elt s) =>
              (elt -> Maybe elt) -> NodeStatus -> Revision k -> set -> m (set, elt)
