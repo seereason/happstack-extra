@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.85) unstable; urgency=low
+
+  * Parameterize the Revision type so the ident field doesn't have to
+    be type Ident.  This allows applications to use several types in
+    that field each which could, for example, be indexed in an IxSet.
+
+ -- David Fox <dsf@seereason.com>  Tue, 02 Mar 2010 05:13:41 -0800
+
 haskell-happstack-extra (0.84) unstable; urgency=low
 
   * Improve the Data.Text support to the three way merging code.  There

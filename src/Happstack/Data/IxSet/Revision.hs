@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances,
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, FunctionalDependencies,
              MultiParamTypeClasses, RankNTypes, ScopedTypeVariables, TemplateHaskell,
              UndecidableInstances #-}
 {-# OPTIONS -fno-warn-orphans -Wwarn #-}
@@ -7,7 +7,6 @@ module Happstack.Data.IxSet.Revision
     , Revision(..)
     , RevisionInfo(..)
     , changeRevisionInfo
---    , RevisionInfo001(..)
     , Revisable(..)
     , NodeStatus(..)
     , copyRev
@@ -89,17 +88,17 @@ instance Show Revision where
     show r = show (unIdent (ident r)) ++ "." ++ show (number r)
 -}
 -- |Class of values that have a revision info.
-class Revisable a where
-    getRevisionInfo :: a -> RevisionInfo
-    putRevisionInfo :: RevisionInfo -> a -> a
+class Revisable k a | a -> k where
+    getRevisionInfo :: a -> RevisionInfo k
+    putRevisionInfo :: RevisionInfo k -> a -> a
 
-copyRev :: (Revisable a, Revisable b) => a -> b -> b
+copyRev :: (Revisable k a, Revisable k b) => a -> b -> b
 copyRev s d = putRevisionInfo (getRevisionInfo s) d
 
-changeRevisionInfo :: Revisable a => (RevisionInfo -> RevisionInfo) -> a -> a
+changeRevisionInfo :: Revisable k a => (RevisionInfo k -> RevisionInfo k) -> a -> a
 changeRevisionInfo f x = putRevisionInfo (f (getRevisionInfo x)) x
 
-instance (Ord a, Data a, Revisable a, Indexable a b) => POSet (IxSet a) a where
+instance (Typeable k, Ord a, Data a, Revisable k a, Indexable a b) => POSet (IxSet a) a where
     parents s a =
         concatMap get (parentRevisions (getRevisionInfo a))
         where get n = toList (s @+ [(revision (getRevisionInfo a)) {number = n}])
@@ -118,7 +117,7 @@ class Revisable a => RevisableSet s a where
 -}
 
 -- |Initialize the revision info.
-initialRevision :: Revisable a => Ident -> EpochMilli -> a -> a
+initialRevision :: Revisable k a => k -> EpochMilli -> a -> a
 initialRevision newID creationTime x =
     putRevisionInfo (RevisionInfo {revision = Revision {ident = newID, number = 1},
                                    created = creationTime,
@@ -169,7 +168,7 @@ merge all parents merged =
 -- and (3) not common ancestors of heads.  This is a garbage collector
 -- for a simple revision control system.  However, you can't use unless
 -- you know there are no pending revisions out there waiting to happen.
-prune :: forall a. forall b. (Ord a, Data a, Revisable a, Indexable a b) => IxSet a -> IxSet a -> IxSet a
+prune :: forall k a. forall b. (Typeable k, Ord a, Data a, Revisable k a, Indexable a b) => IxSet a -> IxSet a -> IxSet a
 prune s all =
     foldr remove (foldr reParent all reparentPairs) (S.toList victims)
     where
@@ -190,7 +189,7 @@ prune s all =
 type Heads a = Maybe (Either a [(a, a, a)])
 
 -- |Return the current value of a Revisable.
-heads :: (Ord a, Data a, Revisable a, Indexable a b) => IxSet a ->  Heads a
+heads :: (Show k, Typeable k, Ord a, Data a, Revisable k a, Indexable a b) => IxSet a ->  Heads a
 heads s =
     case toList (s @= Head) of
       [] -> Nothing
@@ -206,13 +205,13 @@ heads s =
 -- each other.  If not, the combined value is returned, otherwise
 -- Nothing.  Remember that the revision info will always differ, don't
 -- try to merge it!
-combine3 :: forall m a. (MonadPlus m, Revisable a) => (a -> a -> a -> m a) -> (a -> a -> Bool) -> a -> a -> a -> m a
+combine3 :: forall k m a. (MonadPlus m, Revisable k a) => (a -> a -> a -> m a) -> (a -> a -> Bool) -> a -> a -> a -> m a
 combine3 conflict eq original left right =
     mergeBy conflict eq original (putRevisionInfo rev left) (putRevisionInfo rev right)
     where rev = getRevisionInfo original
 
 -- | Unused?
-conflicts :: forall m a. (MonadPlus m, Revisable a, Data a) =>
+conflicts :: forall k m a. (MonadPlus m, Revisable k a, Data a) =>
              GM -> (forall m x. (MonadPlus m, Data x) => [String] -> x -> x -> x -> m x) ->
                    (forall m x. (MonadPlus m, Data x) => x -> x -> m x) -> a -> a -> a -> m a
 conflicts q conflict eq original left right =
@@ -321,14 +320,14 @@ classes eq s xs =
       combines s x y = isJust $ combine3 (\ _ _ _ -> Nothing) eq (commonAncestor' s x y) x y
 -}
 
-showRev :: RevisionInfo -> String
-showRev r = (show . unIdent . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)
+showRev :: Show k => RevisionInfo k -> String
+showRev r = (show . ident . revision $ r) ++ "." ++ (show . number . revision $ r) ++ " " ++ show (parentRevisions r)
 
 -- |A version of common ancestor that assumes there is one.
-commonAncestor' :: (Revisable a, Data a, POSet (IxSet a) a) => IxSet a -> a -> a -> a
+commonAncestor' :: (Show k, Revisable k a, Data a, POSet (IxSet a) a) => IxSet a -> a -> a -> a
 commonAncestor' s x y = maybe (error $ message s x y) id (commonAncestor s x y)
 
-message :: (Revisable a, Data a, POSet (IxSet a) a) => IxSet a -> a -> a -> String
+message :: (Show k, Revisable k a, Data a, POSet (IxSet a) a) => IxSet a -> a -> a -> String
 message s x y =
     ("No common ancestor: " ++ showRev rx ++ ", " ++ showRev ry ++
      "\n  parents " ++ showRev rx ++ " -> " ++ intercalate " " (map (showRev . getRevisionInfo) (parents s x))  ++
