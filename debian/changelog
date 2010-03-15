@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.87) unstable; urgency=low
+
+  * Move the revision and merging code into a separate revision package.
+
+ -- David Fox <dsf@seereason.com>  Mon, 15 Mar 2010 10:50:02 -0700
+
 haskell-happstack-extra (0.86) unstable; urgency=low
 
   * Additional changes to get migration to work.

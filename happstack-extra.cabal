@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.86
+Version:          0.87
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -15,14 +15,12 @@ Exposed-Modules:  HSP.HTML.Extra, Happstack.Extra, Happstack.Data.IxSet.Extra,
                   Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
                   Happstack.Server.Formlets, Happstack.Server.RqData, Happstack.Server.Feed, HSP.Applicative, HSP.Pandoc,
-                  Happstack.Data.IxSet.POSet, Happstack.Data.IxSet.Revision, Happstack.Data.IxSet.Revision.Old1,
-                  Happstack.Data.IxSet.Revision.Current, Happstack.Data.IxSet.Revision.Instances, Happstack.Data.IxSet.Merge,
-		  Happstack.Data.IxSet.Store, Happstack.Data.IxSet.Triplets, Happstack.Data.Logger
+		  Happstack.Data.Logger
                   
-Build-Depends:    base >= 4, bytestring, containers, filepath, html, mtl, network, parsec, random, regex-compat,
-                  syb, syb-with-class, utf8-string, hsp >= 0.4.4, harp >= 0.4, hsx >= 0.4.4, hslogger,
+Build-Depends:    base >= 4, bytestring, containers, filepath, html, mtl, network, random,
+                  syb, syb-with-class, utf8-string, hsp >= 0.4.4, hsx >= 0.4.4, hslogger,
                   happstack-server, happstack-data, happstack-ixset, happstack-util, happstack-state, happstack >= 0.4.3,
-                  RJson, Extra >= 1.27, applicative-extras >= 0.1.5, formlets >= 0.7.1, feed, xml, pandoc, html-entities, text
+                  RJson, Extra >= 1.27, applicative-extras >= 0.1.5, formlets >= 0.7.1, feed, xml, pandoc
 hs-source-dirs:   src
 
 Build-Type:       Simple
