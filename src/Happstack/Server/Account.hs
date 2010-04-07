@@ -21,7 +21,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Maybe
-import Data.Generics
+import Data.Generics (Data)
 import Happstack.Data
 import Happstack.Data.IxSet
 --import Happstack.Data.IxSet.Extra
