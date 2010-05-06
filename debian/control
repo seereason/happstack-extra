@@ -38,7 +38,7 @@ Build-Depends: debhelper (>= 5.0),
                haskell-feed-doc,
                libghc6-pandoc-prof,
                libghc6-xml-prof,
-               haskell-xml-doc,
+               libghc6-xml-doc | haskell-xml-doc,
                libghc6-html-entities-prof
 Standards-Version: 3.7.2.2
 
