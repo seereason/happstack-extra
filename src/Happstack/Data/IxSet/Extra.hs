@@ -12,7 +12,7 @@ import qualified Data.Set as Set
 import Happstack.Data.IxSet
 
 -- |perform insert only if test is True
-testAndInsert :: (Indexable a b,
+testAndInsert :: (Indexable a,
                   Ord a,
                   Data a,
                   MonadState (IxSet a) m) =>
@@ -44,5 +44,5 @@ insertIfNew k v m =
 
 
 -- | Takes the intersection of the two IxSets
-difference :: (Ord a, Data a, Indexable a b) => IxSet a -> IxSet a -> IxSet a
+difference :: (Ord a, Data a, Indexable a) => IxSet a -> IxSet a -> IxSet a
 difference x1 x2 = fromSet $ Set.difference (toSet x1) (toSet x2)

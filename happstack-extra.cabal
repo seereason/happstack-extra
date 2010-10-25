@@ -14,7 +14,7 @@ Exposed-Modules:  HSP.HTML.Extra, Happstack.Extra, Happstack.Data.IxSet.Extra,
                   Happstack.Server.Session, Happstack.Data.Serialize.Extra, 
                   Happstack.State.Extra, Happstack.Server.Account, Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra, Happstack.Server.Extra, Happstack.Server.Main, 
-                  Happstack.Server.Formlets, Happstack.Server.RqData, Happstack.Server.Feed, HSP.Applicative, HSP.Pandoc,
+                  Happstack.Server.Formlets, Happstack.Server.Feed, HSP.Applicative, HSP.Pandoc,
 		  Happstack.Data.Logger
                   
 Build-Depends:    base >= 4, bytestring, containers, filepath, html, mtl, network, random,

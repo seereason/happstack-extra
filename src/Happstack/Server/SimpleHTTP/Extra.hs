@@ -4,7 +4,7 @@ module Happstack.Server.SimpleHTTP.Extra where
 
 import Control.Monad.Identity
 import qualified Data.ByteString.Char8 as P
-import Happstack.Server hiding (Web)
+import Happstack.Server
 import Happstack.Server.HSP.HTML ()
 import HSP (XMLGenT, XML)
 import HSP.HTML

@@ -24,7 +24,7 @@ import Data.Maybe (fromJust)
 import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, noopValidator
                    , notFound, setValidator, toResponse, withRequest) 
 import HSP
-import Happstack.Server.HTTP.Types (Input(inputValue))
+import Happstack.Server.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
 import Text.Html.Entities (utf8ToUnicode)
