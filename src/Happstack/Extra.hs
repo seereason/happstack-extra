@@ -5,7 +5,6 @@ module Happstack.Extra
  , module Happstack.Server.Extra
  , module Happstack.Server.Main
  , module Happstack.Server.Session
- , module Happstack.Server.SimpleHTTP
  , module Happstack.State.Extra
  ) where
 
@@ -15,6 +14,5 @@ import Happstack.Server.Account
 import Happstack.Server.Extra
 import Happstack.Server.Main
 import Happstack.Server.Session
-import Happstack.Server.SimpleHTTP
 import Happstack.State.Extra
 

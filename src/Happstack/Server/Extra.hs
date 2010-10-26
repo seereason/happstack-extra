@@ -21,8 +21,7 @@ import qualified Data.ByteString.Lazy.UTF8 as U
 --import Data.Char (chr)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), WebT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), getHeader, noopValidator
-                   , notFound, setValidator, toResponse, withRequest) 
+import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), HasRqData(..), getHeader, lookPairs, noopValidator, notFound, setValidator, toResponse) 
 import HSP
 import Happstack.Server.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
@@ -37,7 +36,7 @@ debug404 =
 
 -- |pretty print the Request as Html
 prettyRequest :: Happstack.Request -> Html
-prettyRequest (Happstack.Request method paths uri query inputs cookies version headers body' peer)
+prettyRequest (Happstack.Request method paths uri query inputsQuery inputsBody cookies version headers body' peer)
           = thehtml ((thetitle (toHtml "404"))  +++
                      (body ((h1 (toHtml "Requested object not found.")) +++
                             (dlist
@@ -45,12 +44,12 @@ prettyRequest (Happstack.Request method paths uri query inputs cookies version h
                               ((define (toHtml "paths")   +++ (ddef (prettyList (map toHtml paths))))) +++
                               ((define (toHtml "uri")     +++ (ddef (toHtml uri))))     +++
                               ((define (toHtml "query")   +++ (ddef (toHtml query))))          +++
-                              ((define (toHtml "inputs")  +++ (ddef (prettyDlist (map (toHtml *** (toHtml . show)) inputs)))))  +++
+                              ((define (toHtml "inputs")  +++ (ddef (prettyDlist (map (toHtml *** (toHtml . show)) inputsQuery)))))  +++
                               ((define (toHtml "cookies") +++ (ddef (prettyDlist (map (toHtml *** (toHtml . show)) cookies)))))  +++
                               ((define (toHtml "version") +++ (ddef (toHtml (show version))))) +++
                               ((define (toHtml "headers") +++ (ddef (prettyDlist (map ((toHtml . show) *** (toHtml . show)) (Map.toList headers)))))) +++
-                              ((define (toHtml "peer")    +++ (ddef (toHtml (show peer)))))    +++
-                              ((define (toHtml "body")    +++ (ddef (toHtml (show body')))))
+                              ((define (toHtml "peer")    +++ (ddef (toHtml (show peer))))) --    +++
+--                              ((define (toHtml "body")    +++ (ddef (toHtml (show body')))))
                              )
                             )
                            )
@@ -64,9 +63,10 @@ prettyDlist :: [(Html, Html)] -> Html
 prettyDlist = dlist . foldr (+++) noHtml . map (\(k,v) -> define k +++ ddef v)
 
 -- |Retrieve and parse the request URL and pass it to f.
-withURI :: (URI -> WebT m a) -> ServerPartT m a
+withURI :: (ServerMonad m) => (URI -> m a) -> m a
 withURI f =
-    withRequest (f . fromJust . parseRelativeReference . rqURL)
+    do rq <- askRq
+       (f . fromJust . parseRelativeReference . rqURL) $ rq
     -- The definition of rqURL in Happstack doesn't do what I would
     -- expect.  In fact, I don't really understand what it does.
     where rqURL rq = rqUri rq ++ rqQuery rq
@@ -85,14 +85,16 @@ withURISP f = askRq >>= \request ->
         in f uri
 
 -- |A version of Happstack lookPairs that doesn't unpack its values.
-lookPairsPacked :: RqData [(String, U.ByteString)]
-lookPairsPacked = asks fst >>= return . map (\ (n,vbs) -> (n, inputValue vbs))
+lookPairsPacked :: RqData [(String, Either FilePath U.ByteString)]
+lookPairsPacked =
+    do (query, body, _cookies) <- askRqEnv
+       return $ map (\(n,vbs)->(n, inputValue vbs)) (query ++ body)
 
 -- |Interpret the packed string returned from the server as UTF8
 -- (which it is) and convert it to unicode.
-lookPairsUnicode :: RqData [(String,String)]
-lookPairsUnicode = 
-    asks fst >>= return . map (\ (n,vbs) -> (n, utf8ToUnicode (inputValue vbs)))
+lookPairsUnicode :: RqData [(String, Either FilePath String)]
+lookPairsUnicode = lookPairs
+{-# DEPRECATED lookPairsUnicode "just use lookPairs" #-}
 
 -- * Simple Applicative and Alternative instances for RqData via ReaderT
 instance (Monad m) => Applicative (ReaderT r m) where
@@ -102,15 +104,3 @@ instance (Monad m) => Applicative (ReaderT r m) where
 instance (MonadPlus m) => Alternative (ReaderT r m) where
     empty = unwrapMonad empty
     f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)
-
-instance (ServerMonad m) => ServerMonad (XMLGenT m) where
-    askRq   = XMLGenT askRq
-    localRq f (XMLGenT m) = XMLGenT (localRq f m)
-
-instance (FilterMonad a m) => FilterMonad a (XMLGenT m) where
-    setFilter = XMLGenT . setFilter
-    composeFilter f = XMLGenT (composeFilter f)
-    getFilter (XMLGenT m) = XMLGenT (getFilter m)
-
-instance (WebMonad a m) => WebMonad a (XMLGenT m) where
-    finishWith r = XMLGenT $ finishWith r

@@ -31,7 +31,7 @@ import Happstack.Data (Default, deriveAll, gFind')
 import Happstack.Data.IxSet (Indexable(..), (@=), delete, getOne, inferIxSet, noCalcs, updateIx)
 import Happstack.Data.IxSet.Extra (testAndInsert)
 import Happstack.State (Serialize, Version, Query, Update, deriveSerialize, getRandom, mkMethods, query)
-import Happstack.Server (ServerMonad, withDataFn, readCookieValue)
+import Happstack.Server (ServerMonad, HasRqData, withDataFn, readCookieValue)
 import Happstack.Server.Extra ()
 
 class (Ord s, Serialize s, Data s, Default s) => SessionData s
@@ -92,7 +92,7 @@ $(mkMethods ''Sessions
   , 'newSession
   ])
 
-withSessionId :: (MonadPlus m, ServerMonad m) => (SessionId -> m a) -> m a
+withSessionId :: (MonadPlus m, ServerMonad m, HasRqData m, MonadIO m) => (SessionId -> m a) -> m a
 withSessionId = withDataFn (readCookieValue "sessionId")
 
 withSessionData :: (Ord a, Serialize a, Data a, MonadIO m, MonadPlus m) => SessionId -> (a -> m r) -> m r
@@ -111,10 +111,10 @@ withSessionDataSP' sID f =
             (Just (Session _ sessionData)) ->
                 f sessionData
 
-withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m, ServerMonad m, MonadPlus m) => (a -> m r) -> m r
+withSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m, ServerMonad m, MonadPlus m, HasRqData m) => (a -> m r) -> m r
 withSessionDataSP f = withSessionId (\sID -> withSessionDataSP' sID f)
 
-withMSessionId :: (ServerMonad m, MonadPlus m) => (Maybe SessionId -> m r) -> m r
+withMSessionId :: (ServerMonad m, MonadPlus m, HasRqData m, MonadIO m) => (Maybe SessionId -> m r) -> m r
 withMSessionId f = withDataFn (optional (readCookieValue "sessionId")) $ \mSid -> f mSid
 
 withMSessionData :: (Ord a, Serialize a, Data a, MonadIO m) => SessionId -> (Maybe a -> m r) -> m r
@@ -134,7 +134,7 @@ withMSessionDataSP' (Just sID) f =
          (Just (Session _ sessionData)) ->
              f (Just sessionData)
 
-withMSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m, ServerMonad m, MonadPlus m) => (Maybe a -> m r) -> m r
+withMSessionDataSP :: (Ord a, Serialize a, Data a, MonadIO m, ServerMonad m, MonadPlus m, HasRqData m) => (Maybe a -> m r) -> m r
 withMSessionDataSP f =
     withMSessionId (\sID -> withMSessionDataSP' sID f)
     where

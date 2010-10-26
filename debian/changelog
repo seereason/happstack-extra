@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.88) unstable; urgency=low
+
+  * Updated to happstack 0.5.1 from darcs
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Tue, 26 Oct 2010 18:23:24 -0500
+
 haskell-happstack-extra (0.87) unstable; urgency=low
 
   * Move the revision and merging code into a separate revision package.
