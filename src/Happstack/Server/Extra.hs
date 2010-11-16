@@ -11,6 +11,7 @@ module Happstack.Server.Extra
     , lookPairsUnicode
     ) where
 
+import Control.Applicative
 import Control.Arrow ((***))
 --import Control.Monad(msum)
 import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
