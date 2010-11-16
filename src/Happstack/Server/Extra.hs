@@ -11,7 +11,6 @@ module Happstack.Server.Extra
     , lookPairsUnicode
     ) where
 
-import Control.Applicative
 import Control.Arrow ((***))
 --import Control.Monad(msum)
 import Control.Monad.Reader (MonadPlus(..), ap, ReaderT(..), asks)
@@ -95,12 +94,3 @@ lookPairsPacked =
 lookPairsUnicode :: RqData [(String, Either FilePath String)]
 lookPairsUnicode = lookPairs
 {-# DEPRECATED lookPairsUnicode "just use lookPairs" #-}
-
--- * Simple Applicative and Alternative instances for RqData via ReaderT
-instance (Monad m) => Applicative (ReaderT r m) where
-    pure = return
-    (<*>) = ap
-
-instance (MonadPlus m) => Alternative (ReaderT r m) where
-    empty = unwrapMonad empty
-    f <|> g = unwrapMonad $ (WrapMonad f) <|> (WrapMonad g)
