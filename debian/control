@@ -4,49 +4,49 @@ Section: misc
 Maintainer: Jeremy Shaw <jeremy@n-heptane.com>
 Build-Depends: debhelper (>= 5.0),
                haskell-devscripts, hscolour,
-               ghc6 (>= 6.8),
-               ghc6-doc,
-               ghc6 (>= 6.12) | haddock (>= 2.1.0),
-               ghc6-prof,
-               libghc6-extra-prof (>= 1.28),
-               libghc6-extra-doc (>= 1.28),
-               libghc6-happstack-data-prof,
-               libghc6-happstack-hsp-prof,
-               libghc6-happstack-hsp-doc,
-               libghc6-happstack-ixset-prof,
-               libghc6-happstack-server-prof,
-               libghc6-happstack-state-prof,
-               libghc6-happstack-util-prof,
+               ghc (>= 6.8),
+               ghc-doc,
+               ghc (>= 6.12) | haddock (>= 2.1.0),
+               ghc-prof,
+               libghc-extra-prof (>= 1.28),
+               libghc-extra-doc (>= 1.28),
+               libghc-happstack-data-prof,
+               libghc-happstack-hsp-prof,
+               libghc-happstack-hsp-doc,
+               libghc-happstack-ixset-prof,
+               libghc-happstack-server-prof,
+               libghc-happstack-state-prof,
+               libghc-happstack-util-prof,
                haskell-happstack-util-doc,
-               libghc6-happstack-prof,
+               libghc-happstack-prof,
                haskell-happstack-doc,
-               libghc6-harp-prof (>= 0.4),
-               libghc6-harp-doc (>= 0.4),
-               libghc6-hsp-prof (>= 0.4.4),
-               libghc6-hsp-doc (>= 0.4.4),
-               libghc6-hsx-prof (>= 0.4.4),
-               libghc6-hsx-doc (>= 0.4.4),
-               libghc6-rjson-prof,
-               libghc6-rjson-doc,
-               libghc6-utf8-string-prof,
-               libghc6-utf8-string-doc,
-	       libghc6-applicative-extras-prof (>= 0.1.5),
-	       libghc6-applicative-extras-doc (>= 0.1.5),
-	       libghc6-formlets-prof (>= 0.4.8-5),
+               libghc-harp-prof (>= 0.4),
+               libghc-harp-doc (>= 0.4),
+               libghc-hsp-prof (>= 0.4.4),
+               libghc-hsp-doc (>= 0.4.4),
+               libghc-hsx-prof (>= 0.4.4),
+               libghc-hsx-doc (>= 0.4.4),
+               libghc-rjson-prof,
+               libghc-rjson-doc,
+               libghc-utf8-string-prof,
+               libghc-utf8-string-doc,
+	       libghc-applicative-extras-prof (>= 0.1.5),
+	       libghc-applicative-extras-doc (>= 0.1.5),
+	       libghc-formlets-prof (>= 0.4.8-5),
 	       haskell-formlets-doc (>= 0.4.8-5),
-	       libghc6-syb-with-class-prof,
-               libghc6-syb-with-class-instances-text-prof,
+	       libghc-syb-with-class-prof,
+               libghc-syb-with-class-instances-text-prof,
                haskell-syb-with-class-instances-text-doc,
                trhsx,
-               libghc6-feed-prof,
+               libghc-feed-prof,
                haskell-feed-doc,
-               libghc6-pandoc-prof,
-               libghc6-xml-prof,
-               libghc6-xml-doc | haskell-xml-doc,
-               libghc6-html-entities-prof
+               libghc-pandoc-prof,
+               libghc-xml-prof,
+               libghc-xml-doc | haskell-xml-doc,
+               libghc-html-entities-prof
 Standards-Version: 3.7.2.2
 
-Package: libghc6-happstack-extra-dev
+Package: libghc-happstack-extra-dev
 Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
@@ -59,7 +59,7 @@ Description: Components built on top of Happstack+HSP
   .
   This package contains the normal library files.
 
-Package: libghc6-happstack-extra-prof
+Package: libghc-happstack-extra-prof
 Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
@@ -76,8 +76,8 @@ Package: haskell-happstack-extra-doc
 Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
-Conflicts: libghc6-happstack-extra-doc
-Replaces: libghc6-happstack-extra-doc
+Conflicts: libghc-happstack-extra-doc
+Replaces: libghc-happstack-extra-doc
 Description: Components built on top of Happstack+HSP
   A collection of components built on top of Happstack+HSP, including
   Google Analytics, a Calendar widget, and more.
