@@ -36,7 +36,7 @@ Build-Depends: debhelper (>= 5.0),
 	       haskell-formlets-doc (>= 0.4.8-5),
 	       libghc-syb-with-class-prof,
                libghc-syb-with-class-instances-text-prof,
-               haskell-syb-with-class-instances-text-doc
+               haskell-syb-with-class-instances-text-doc,
                libghc-feed-prof,
                haskell-feed-doc,
                libghc-pandoc-prof,
