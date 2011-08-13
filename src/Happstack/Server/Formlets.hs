@@ -95,7 +95,7 @@ formletPart action handleSuccess handleFailure form =
 
 lookEnv :: RqData Env
 lookEnv =
-    do (query,body,_) <- askRqEnv
+    do (query, body, _) <- askRqEnv
        return $ map (\(name, value) ->
                      case inputValue value of
                        (Left fileContentsPath) ->
@@ -107,7 +107,7 @@ lookEnv =
                                                                                 }
                                                 }))
                        (Right contents) ->
-                           (name, Left $ LU.toString contents)) (query ++ body)
+                           (name, Left $ LU.toString contents)) (query ++ (fromMaybe [] body))
 
 handleFailure :: (XMLGenerator m) => (forall c. (EmbedAsChild m c) => (String -> c -> XMLGenT m b)) -> [ErrorMsg] -> [XMLGenT m (HSX.XML m)] -> XMLGenT m b
 handleFailure pageFromBody faults frmXML =

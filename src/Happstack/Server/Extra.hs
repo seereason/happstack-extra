@@ -20,7 +20,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.UTF8 as U
 --import Data.Char (chr)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Happstack.Server as Happstack (RqData, Request(..), Response(..), ServerPartT(..), FilterMonad(..), ServerMonad(..), WebMonad(..), HasRqData(..), getHeader, lookPairs, noopValidator, notFound, setValidator, toResponse) 
 import HSP
 import Happstack.Server.Types (Input(inputValue))
@@ -88,7 +88,7 @@ withURISP f = askRq >>= \request ->
 lookPairsPacked :: RqData [(String, Either FilePath U.ByteString)]
 lookPairsPacked =
     do (query, body, _cookies) <- askRqEnv
-       return $ map (\(n,vbs)->(n, inputValue vbs)) (query ++ body)
+       return $ map (\(n,vbs)->(n, inputValue vbs)) (query ++ (fromMaybe [] body))
 
 -- |Interpret the packed string returned from the server as UTF8
 -- (which it is) and convert it to unicode.

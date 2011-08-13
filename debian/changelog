@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.89) unstable; urgency=low
+
+  * Patched Happstack.Server.Formlets for happstack-server 6.2
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Sat, 13 Aug 2011 13:36:01 -0500
+
 haskell-happstack-extra (0.88) unstable; urgency=low
 
   * Updated to happstack 0.5.1 from darcs
