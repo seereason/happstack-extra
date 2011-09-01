@@ -71,12 +71,12 @@ Description: Components built on top of Happstack+HSP
   .
   This package contains the libraries compiled with profiling enabled.
 
-Package: haskell-happstack-extra-doc
+Package: libghc-happstack-extra-doc
 Architecture: any
 Section: libdevel
 Depends: ${haskell:Depends}
-Conflicts: libghc-happstack-extra-doc
-Replaces: libghc-happstack-extra-doc
+Conflicts: haskell-happstack-extra-doc
+Replaces: haskell-happstack-extra-doc
 Description: Components built on top of Happstack+HSP
   A collection of components built on top of Happstack+HSP, including
   Google Analytics, a Calendar widget, and more.
