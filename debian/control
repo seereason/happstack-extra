@@ -42,7 +42,8 @@ Build-Depends: debhelper (>= 5.0),
                libghc-pandoc-prof,
                libghc-xml-prof,
                libghc-xml-doc | haskell-xml-doc,
-               libghc-html-entities-prof
+               libghc-html-entities-prof,
+               trhsx
 Standards-Version: 3.7.2.2
 
 Package: libghc-happstack-extra-dev
