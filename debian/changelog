@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.90) unstable; urgency=low
+
+  * Copy two modules from haskell-extra to here so we can
+    remove the dependency on Extra.
+
+ -- David Fox <dsf@seereason.com>  Sun, 04 Dec 2011 19:13:11 -0800
+
 haskell-happstack-extra (0.89-1) unstable; urgency=low
 
   * Change doc package prefix from haskell- to libghc-.
