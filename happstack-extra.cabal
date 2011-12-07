@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.90
+Version:          0.91
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -20,7 +20,7 @@ Other-Modules:    Extra.URIQuery Extra.URI
                   
 Build-Depends:    base >= 4, bytestring, containers, filepath, html, mtl, network, random,
                   syb, syb-with-class, utf8-string, hsp >= 0.4.4, hsx >= 0.4.4, hslogger,
-                  happstack-server >= 6.2, happstack-data, happstack-hsp, happstack-ixset, happstack-util, happstack-state, happstack >= 0.4.3,
+                  happstack-server >= 6.4, happstack-data, happstack-hsp, happstack-ixset, happstack-util, happstack-state,
                   RJson, applicative-extras >= 0.1.5, formlets >= 0.7.1, feed, xml, pandoc, html-entities,
                   syb-with-class-instances-text
 hs-source-dirs:   src

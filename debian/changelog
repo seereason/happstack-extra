@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.91) unstable; urgency=low
+
+  * Add FromReqURI instance for SessionId
+  * remove obselete dependency on happstack
+
+ -- Jeremy Shaw <jeremy@seereason.com>  Wed, 07 Dec 2011 09:45:02 -0600
+
 haskell-happstack-extra (0.90) unstable; urgency=low
 
   * Copy two modules from haskell-extra to here so we can

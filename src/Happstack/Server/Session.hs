@@ -26,12 +26,14 @@ import Control.Applicative ((<$>),optional)
 import Control.Monad.State hiding (State)
 import Control.Monad.Reader (ask)
 import Data.Generics (Data)
+import Data.List  (stripPrefix)
 import Data.Maybe (isNothing)
+import Numeric (readDec)
 import Happstack.Data (Default, deriveAll, gFind')
 import Happstack.Data.IxSet (Indexable(..), (@=), delete, getOne, inferIxSet, noCalcs, updateIx)
 import Happstack.Data.IxSet.Extra (testAndInsert)
 import Happstack.State (Serialize, Version, Query, Update, deriveSerialize, getRandom, mkMethods, query)
-import Happstack.Server (ServerMonad, HasRqData, withDataFn, readCookieValue)
+import Happstack.Server (ServerMonad, FromReqURI(..), HasRqData, withDataFn, readCookieValue)
 import Happstack.Server.Extra ()
 
 class (Ord s, Serialize s, Data s, Default s) => SessionData s
@@ -40,6 +42,15 @@ $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default, ''Num]
    [d|
        newtype SessionId = SessionId Integer
     |])
+
+instance FromReqURI SessionId where
+  fromReqURI s =
+    case stripPrefix "SessionId " s of
+      Nothing -> Nothing
+      (Just iStr) -> 
+        case readDec iStr of
+          [(n,[])] -> Just (SessionId n)
+          _        -> Nothing
 
 $( deriveAll [''Ord, ''Eq, ''Read, ''Show, ''Default]
    [d|
