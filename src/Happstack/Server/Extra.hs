@@ -36,11 +36,12 @@ debug404 =
 
 -- |pretty print the Request as Html
 prettyRequest :: Happstack.Request -> Html
-prettyRequest (Happstack.Request method paths uri query inputsQuery inputsBody cookies version headers body' peer)
+prettyRequest (Happstack.Request secure method paths uri query inputsQuery inputsBody cookies version headers body' peer)
           = thehtml ((thetitle (toHtml "404"))  +++
                      (body ((h1 (toHtml "Requested object not found.")) +++
                             (dlist
-                             (((define (toHtml "method")  +++ (ddef (toHtml (show method)))))  +++
+                             (((define (toHtml "secure")  +++ (ddef (toHtml (show secure)))))  +++
+                              ((define (toHtml "method")  +++ (ddef (toHtml (show method)))))  +++
                               ((define (toHtml "paths")   +++ (ddef (prettyList (map toHtml paths))))) +++
                               ((define (toHtml "uri")     +++ (ddef (toHtml uri))))     +++
                               ((define (toHtml "query")   +++ (ddef (toHtml query))))          +++
