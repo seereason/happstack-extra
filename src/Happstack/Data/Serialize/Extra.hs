@@ -2,8 +2,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Happstack.Data.Serialize.Extra where
 
-import Happstack.Data (Default(..), deriveAll, deriveSerialize)
-import Happstack.State (Version(..))
+import Happstack.Data (Default(..), deriveAll, deriveSerialize, Version(..))
 import qualified Data.ByteString.UTF8 as B
 import GHC.Exts (IsString(fromString))
 
