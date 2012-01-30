@@ -1,3 +1,10 @@
+haskell-happstack-extra (0.92) unstable; urgency=low
+
+  * Move portions that depend on happstack-state into a new package
+    named happstack-state-extra.
+
+ -- David Fox <dsf@seereason.com>  Mon, 30 Jan 2012 08:59:30 -0800
+
 haskell-happstack-extra (0.91) unstable; urgency=low
 
   * Add FromReqURI instance for SessionId
