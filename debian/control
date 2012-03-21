@@ -27,7 +27,7 @@ Build-Depends: debhelper (>= 5.0),
                libghc-xml-prof,
                libghc-xml-doc | haskell-xml-doc,
                libghc-html-entities-prof,
-               trhsx
+               haskell-hsx-utils
 Standards-Version: 3.7.2.2
 
 Package: libghc-happstack-extra-dev
