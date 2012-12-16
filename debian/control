@@ -1,32 +1,77 @@
 Source: haskell-happstack-extra
 Priority: optional
-Section: misc
+Section: haskell
 Maintainer: Jeremy Shaw <jeremy@n-heptane.com>
-Build-Depends: debhelper (>= 5.0),
-               haskell-devscripts, hscolour,
-               ghc (>= 6.8),
-               ghc-doc,
-               ghc (>= 6.12) | haddock (>= 2.1.0),
-               ghc-prof,
-               libghc-happstack-hsp-prof,
-               libghc-happstack-hsp-doc,
-               libghc-happstack-ixset-prof,
-               libghc-happstack-server-prof (>= 6.5),
-               libghc-happstack-util-prof,
-               libghc-happstack-util-doc,
-               libghc-harp-prof (>= 0.4),
-               libghc-harp-doc (>= 0.4),
-               libghc-hsp-prof (>= 0.4.4),
-               libghc-hsp-doc (>= 0.4.4),
-               libghc-utf8-string-prof,
-               libghc-utf8-string-doc,
-               libghc-feed-prof,
-               libghc-feed-doc,
-               libghc-pandoc-prof,
-               libghc-xml-prof,
-               libghc-xml-doc | haskell-xml-doc,
-               libghc-html-entities-prof,
-               haskell-hsx-utils
+Build-Depends: debhelper (>= 7.0)
+               , haskell-devscripts (>= 0.8)
+               , cdbs
+               , ghc
+               , ghc-prof
+               , libghc-base-dev (>= 4) | ghc
+               , libghc-base-prof (>= 4) | ghc-prof
+               , libghc-bytestring-dev | ghc
+               , libghc-bytestring-prof | ghc-prof
+               , libghc-containers-dev | ghc
+               , libghc-containers-prof | ghc-prof
+               , libghc-feed-dev
+               , libghc-feed-prof
+               , libghc-filepath-dev | ghc
+               , libghc-filepath-prof | ghc-prof
+               , libghc-happstack-hsp-dev
+               , libghc-happstack-hsp-prof
+               , libghc-happstack-ixset-dev
+               , libghc-happstack-ixset-prof
+               , libghc-happstack-server-dev (>= 6.5)
+               , libghc-happstack-server-prof (>= 6.5)
+               , libghc-happstack-util-dev
+               , libghc-happstack-util-prof
+               , libghc-hslogger-dev
+               , libghc-hslogger-prof
+               , libghc-hsp-dev (>= 0.4.4)
+               , libghc-hsp-prof (>= 0.4.4)
+               , libghc-html-dev
+               , libghc-html-prof
+               , libghc-html-entities-dev
+               , libghc-html-entities-prof
+               , libghc-mtl-dev
+               , libghc-mtl-prof
+               , libghc-network-dev (>= 2.4)
+               , libghc-network-prof (>= 2.4)
+               , libghc-pandoc-dev
+               , libghc-pandoc-prof
+               , libghc-random-dev
+               , libghc-random-prof
+               , libghc-safecopy-dev
+               , libghc-safecopy-prof
+               , libghc-syb-dev
+               , libghc-syb-prof
+               , libghc-utf8-string-dev
+               , libghc-utf8-string-prof
+               , libghc-xml-dev
+               , libghc-xml-prof,
+               , haskell-hsx-utils
+Build-Depends-Indep: ghc-doc
+                     , libghc-base-doc (>= 4) | ghc-doc
+                     , libghc-bytestring-doc | ghc-doc
+                     , libghc-containers-doc | ghc-doc
+                     , libghc-feed-doc
+                     , libghc-filepath-doc | ghc-doc
+                     , libghc-happstack-hsp-doc
+                     , libghc-happstack-ixset-doc
+                     , libghc-happstack-server-doc (>= 6.5)
+                     , libghc-happstack-util-doc
+                     , libghc-hslogger-doc
+                     , libghc-hsp-doc (>= 0.4.4)
+                     , libghc-html-doc
+                     , libghc-html-entities-doc
+                     , libghc-mtl-doc
+                     , libghc-network-doc (>= 2.4)
+                     , libghc-pandoc-doc
+                     , libghc-random-doc
+                     , libghc-safecopy-doc
+                     , libghc-syb-doc
+                     , libghc-utf8-string-doc
+                     , libghc-xml-doc
 Standards-Version: 3.7.2.2
 
 Package: libghc-happstack-extra-dev
