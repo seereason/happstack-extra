@@ -15,22 +15,12 @@ module Happstack.Data.User.Password where
 
 import Control.Monad
 import Happstack.Crypto.SHA1
-import Happstack.Data
+import Data.SafeCopy (deriveSafeCopy, base)
 import System.Random
 
-$( deriveAll [''Ord,''Eq,''Read,''Show,''Default] 
-   [d|
-       data    Password     = Password Salt PasswordHash
-       newtype PasswordHash = PasswordHash String
-       newtype Salt         = Salt String
-    |] )
-
-$(deriveSerialize ''Password)
-instance Version Password
-$(deriveSerialize ''PasswordHash)
-instance Version PasswordHash
-$(deriveSerialize ''Salt)
-instance Version Salt
+data    Password     = Password Salt PasswordHash deriving (Ord, Eq, Read, Show)
+newtype PasswordHash = PasswordHash String deriving (Ord, Eq, Read, Show)
+newtype Salt         = Salt String deriving (Ord, Eq, Read, Show)
 
 -- |check if the submitted password matches the stored password
 checkPassword :: Password -- ^ stored salt and password hash
@@ -58,3 +48,8 @@ newPassword password =
 -- |a 'Password' for which 'checkPassword' will always return 'False'
 lockedPassword :: Password
 lockedPassword = Password (Salt "") (PasswordHash "")
+
+-- Disable these while we migrate any clients that used the old Serialize code
+-- $(deriveSafeCopy 0 'base ''Password)
+-- $(deriveSafeCopy 0 'base ''PasswordHash)
+-- $(deriveSafeCopy 0 'base ''Salt)

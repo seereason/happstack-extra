@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.92
+Version:          0.93
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -15,25 +15,24 @@ Exposed-Modules:  HSP.HTML.Extra,
                   Happstack.Data.User.Password,
                   -- Happstack.Data.User.Permissions,
                   -- Happstack.Server.Session,
-                  Happstack.Data.Serialize.Extra, 
+                  Happstack.Data.Serialize.Extra,
                   -- Happstack.State.Extra,
                   -- Happstack.Server.Account,
                   -- Happstack.Server.Account.Server,
                   Happstack.Server.SimpleHTTP.Extra,
                   Happstack.Server.Extra,
-                  -- Happstack.Server.Main, 
+                  -- Happstack.Server.Main,
                   -- Happstack.Server.Formlets,
                   Happstack.Server.Feed,
                   HSP.Pandoc,
 		  Happstack.Data.Logger
 Other-Modules:    Extra.URIQuery Extra.URI
-                  
+
 Build-Depends:    base >= 4,
                   bytestring,
                   containers,
                   feed,
                   filepath,
-                  happstack-data,
                   happstack-hsp,
                   happstack-ixset,
                   happstack-server >= 6.5,
@@ -46,6 +45,7 @@ Build-Depends:    base >= 4,
                   network >= 2.4,
                   pandoc,
                   random,
+                  safecopy,
                   syb,
                   utf8-string,
                   xml
