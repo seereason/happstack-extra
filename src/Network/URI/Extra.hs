@@ -1,6 +1,6 @@
 -- |Make URI an instance of Read and Ord, and add functions to
 -- manipulate the uriQuery.
-module Extra.URI
+module Network.URI.Extra
     ( module Network.URI
     , relURI
     , setURIPort
@@ -9,10 +9,15 @@ module Extra.URI
     , setURIQuery
     , setURIQueryAttr
     , deleteURIQueryAttr
+    , modify
+    , del
+    , put
+    , copy
     ) where
 
 import Network.URI -- (URIAuth(..), URI(..), parseURI, uriToString, escapeURIString, isUnreserved, unEscapeString)
-import Data.List(intersperse, groupBy, inits)
+import Data.List(intersperse, groupBy, inits, partition)
+import Data.Maybe (listToMaybe)
 import Data.Maybe(isJust, isNothing, catMaybes)
 import Control.Arrow(second)
 
@@ -89,3 +94,32 @@ instance Read URI where
                                (a : _) -> a
                 goodURIs = takeWhile isJust moreURIs
                 (badURIs, moreURIs) = span isNothing allURIs
+
+-- |Modify an individual URI query attributes.
+modify :: String -> (Maybe String -> Maybe String) -> URI -> URI
+modify a vf uri =
+    let (vs, other) = partition ((== a) . fst) (parseURIQuery uri) in
+    setURIQuery (case vf (listToMaybe (map snd vs)) of
+                   Just v' -> (a, v') : other
+                   Nothing -> other) uri
+
+-- |Replace a query attribute with Nothing.
+del :: String -> URI -> URI
+del a uri = modify a (const Nothing) uri
+
+-- |Replace a query attribute with something.
+put :: String -> String -> URI -> URI 
+put a v uri = modify a (const (Just v)) uri
+
+-- |Copy an attribute from one query to another
+copy :: String -> URI -> URI -> URI
+copy a src dst = modify a (const (lookup a (parseURIQuery src))) dst
+
+-- Apply f to all of the URI's pairs
+{-
+modifyAll :: (String -> Maybe String -> Maybe String) -> URI -> URI
+modifyAll f uri =
+    foldr (\ (a, _) uri -> modify a (f a) uri) uri pairs
+    where
+      pairs = parseURIQuery uri
+-}
