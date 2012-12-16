@@ -15,12 +15,13 @@ module Happstack.Data.User.Password where
 
 import Control.Monad
 import Happstack.Crypto.SHA1
+import Data.Generics (Data, Typeable)
 import Data.SafeCopy (deriveSafeCopy, base)
 import System.Random
 
-data    Password     = Password Salt PasswordHash deriving (Ord, Eq, Read, Show)
-newtype PasswordHash = PasswordHash String deriving (Ord, Eq, Read, Show)
-newtype Salt         = Salt String deriving (Ord, Eq, Read, Show)
+data    Password     = Password Salt PasswordHash deriving (Ord, Eq, Read, Show, Data, Typeable)
+newtype PasswordHash = PasswordHash String deriving (Ord, Eq, Read, Show, Data, Typeable)
+newtype Salt         = Salt String deriving (Ord, Eq, Read, Show, Data, Typeable)
 
 -- |check if the submitted password matches the stored password
 checkPassword :: Password -- ^ stored salt and password hash
