@@ -1,3 +1,11 @@
+haskell-happstack-extra (0.94) unstable; urgency=low
+
+  * Change happstack-ixset dependency to ixset.
+  * Move gFind and gFind' here from happstack-data
+  * Eliminate dependency on happstack-data
+
+ -- David Fox <dsf@seereason.com>  Tue, 18 Dec 2012 09:01:14 -0800
+
 haskell-happstack-extra (0.92) unstable; urgency=low
 
   * Move portions that depend on happstack-state into a new package

@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.93
+Version:          0.94
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -35,7 +35,7 @@ Build-Depends:    base >= 4,
                   feed,
                   filepath,
                   happstack-hsp,
-                  happstack-ixset,
+                  ixset,
                   happstack-server >= 6.5,
                   happstack-util,
                   hslogger,
