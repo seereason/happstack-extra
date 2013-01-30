@@ -13,6 +13,8 @@ Build-Depends: debhelper (>= 7.0)
                , libghc-bytestring-prof | ghc-prof
                , libghc-containers-dev | ghc
                , libghc-containers-prof | ghc-prof
+               , libghc-data-default-dev
+               , libghc-data-default-prof
                , libghc-feed-dev
                , libghc-feed-prof
                , libghc-filepath-dev | ghc
@@ -37,8 +39,8 @@ Build-Depends: debhelper (>= 7.0)
                , libghc-mtl-prof
                , libghc-network-dev (>= 2.4)
                , libghc-network-prof (>= 2.4)
-               , libghc-pandoc-dev
-               , libghc-pandoc-prof
+               , libghc-pandoc-dev (>= 1.10)
+               , libghc-pandoc-prof (>= 1.10)
                , libghc-random-dev
                , libghc-random-prof
                , libghc-safecopy-dev
@@ -54,6 +56,7 @@ Build-Depends-Indep: ghc-doc
                      , libghc-base-doc (>= 4) | ghc-doc
                      , libghc-bytestring-doc | ghc-doc
                      , libghc-containers-doc | ghc-doc
+                     , libghc-data-default-doc
                      , libghc-feed-doc
                      , libghc-filepath-doc | ghc-doc
                      , libghc-happstack-hsp-doc
@@ -66,7 +69,7 @@ Build-Depends-Indep: ghc-doc
                      , libghc-html-entities-doc
                      , libghc-mtl-doc
                      , libghc-network-doc (>= 2.4)
-                     , libghc-pandoc-doc
+                     , libghc-pandoc-doc (>= 1.10)
                      , libghc-random-doc
                      , libghc-safecopy-doc
                      , libghc-syb-doc
