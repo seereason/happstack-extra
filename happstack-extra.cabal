@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.94
+Version:          0.94.1
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -42,7 +42,6 @@ Build-Depends:    base >= 4,
                   hslogger,
                   hsp >= 0.4.4,
                   html,
-                  html-entities,
                   mtl,
                   network >= 2.4,
                   pandoc >= 1.10,

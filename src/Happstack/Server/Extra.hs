@@ -26,7 +26,7 @@ import HSP
 import Happstack.Server.Types (Input(inputValue))
 import Network.URI (URI(URI), URIAuth(..), parseRelativeReference)
 import Text.Html
-import Text.Html.Entities (utf8ToUnicode)
+--import Text.Html.Entities (utf8ToUnicode)
 --import Text.Regex (mkRegexWithOpts, matchRegexAll)
 
 -- |a 404 page which shows the failed Request as Html

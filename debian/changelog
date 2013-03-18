@@ -1,3 +1,9 @@
+haskell-happstack-extra (0.94.1) unstable; urgency=low
+
+  * Remove unused dependency on html-entities.
+
+ -- David Fox <dsf@seereason.com>  Mon, 18 Mar 2013 09:09:33 -0700
+
 haskell-happstack-extra (0.94) unstable; urgency=low
 
   * Change happstack-ixset dependency to ixset.
