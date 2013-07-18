@@ -1,5 +1,5 @@
 Name:             happstack-extra
-Version:          0.94.1
+Version:          0.95.0
 License:          BSD3
 Author:           jeremy@seereason.com
 Maintainer:       partners@seereason.com
@@ -10,7 +10,7 @@ Description:      A collection of components built on top of Happstack+HSP, incl
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  Data.Generics.Extra,
-		  HSP.HTML.Extra,
+		  -- HSP.HTML.Extra,
                   Happstack.Extra,
                   Happstack.Data.IxSet.Extra,
                   Happstack.Data.User.Password,
@@ -20,7 +20,7 @@ Exposed-Modules:  Data.Generics.Extra,
                   -- Happstack.State.Extra,
                   -- Happstack.Server.Account,
                   -- Happstack.Server.Account.Server,
-                  Happstack.Server.SimpleHTTP.Extra,
+                  -- Happstack.Server.SimpleHTTP.Extra,
                   Happstack.Server.Extra,
                   -- Happstack.Server.Main,
                   -- Happstack.Server.Formlets,
@@ -48,6 +48,7 @@ Build-Depends:    base >= 4,
                   random,
                   safecopy,
                   syb,
+                  text >= 0.11,
                   utf8-string,
                   xml
 hs-source-dirs:   src
