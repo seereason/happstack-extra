@@ -6,5 +6,5 @@ import qualified Data.Text.Lazy as TL
 import HSP
 import Text.Pandoc (Pandoc, writeHtmlString)
 
-instance (EmbedAsChild m XML) => (EmbedAsChild m Pandoc) where
+instance (XMLGen m, EmbedAsChild m XML) => (EmbedAsChild m Pandoc) where
     asChild pandoc = asChild (cdata $ TL.pack $ writeHtmlString def pandoc)
