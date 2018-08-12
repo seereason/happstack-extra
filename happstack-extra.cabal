@@ -10,7 +10,7 @@ Description:      A collection of components built on top of Happstack+HSP, incl
 
 Hs-Source-Dirs:   src
 Exposed-Modules:  Data.Generics.Extra,
-		  -- HSP.HTML.Extra,
+                  -- HSP.HTML.Extra,
                   Happstack.Extra,
                   Happstack.Data.IxSet.Extra,
                   Happstack.Data.User.Password,
@@ -26,7 +26,7 @@ Exposed-Modules:  Data.Generics.Extra,
                   -- Happstack.Server.Formlets,
                   Happstack.Server.Feed,
                   HSP.Pandoc,
-		  Happstack.Data.Logger
+                  Happstack.Data.Logger
 Other-Modules:    Network.URI.Extra
 
 Build-Depends:    base >= 4,
@@ -44,7 +44,7 @@ Build-Depends:    base >= 4,
                   html,
                   mtl,
                   network-uri >= 2.6,
-                  pandoc >= 1.10,
+                  pandoc >= 2,
                   random,
                   safecopy,
                   syb,
@@ -60,5 +60,4 @@ Extensions:             MultiParamTypeClasses,
                         FlexibleContexts,
                         FlexibleInstances,
                         TypeSynonymInstances,
-                        OverlappingInstances,
                         UndecidableInstances
